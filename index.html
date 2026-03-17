@@ -1,127 +1,198 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CardLab - Digital Card</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardLab - AFG Card</title>
 
-  <!-- 폰트 -->
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Pretendard', sans-serif;
-    }
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Pretendard', sans-serif;
+}
 
-    body {
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(270deg, #6a5cff, #3c7dff, #6a5cff);
-      background-size: 600% 600%;
-      animation: gradientMove 10s ease infinite;
-    }
+body {
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+}
 
-    @keyframes gradientMove {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
+/* ===== 첫 화면 (인트로) ===== */
+.intro {
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  animation: fadeOut 1s ease 2s forwards;
+}
 
-    .card {
-      width: 90%;
-      max-width: 380px;
-      padding: 30px 25px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      text-align: center;
-      color: #fff;
-    }
+.intro img {
+  width: 80px;
+  opacity: 0;
+  animation: logoFade 1s ease forwards;
+}
 
-    .profile {
-      width: 90px;
-      height: 90px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      background: #ccc;
-    }
+@keyframes logoFade {
+  to { opacity: 1; }
+}
 
-    .name {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
 
-    .job {
-      font-size: 14px;
-      opacity: 0.8;
-      margin-bottom: 20px;
-    }
+/* ===== 메인 배경 ===== */
+.main {
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
 
-    .phone {
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
+/* 배경 이미지 */
+.bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #000 0%, #000 40%, #0b1b2b 100%);
+  z-index: -1;
+}
 
-    .message {
-      font-size: 14px;
-      opacity: 0.85;
-      margin-bottom: 25px;
-      line-height: 1.4;
-    }
+/* ===== 카드 ===== */
+.card {
+  width: 100%;
+  padding: 30px 20px 40px;
+  background: rgba(20,20,20,0.7);
+  backdrop-filter: blur(15px);
+  border-radius: 30px 30px 0 0;
+  transform: translateY(100%);
+  animation: slideUp 1s ease 2.2s forwards;
+}
 
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.2);
-      color: #fff;
-      text-decoration: none;
-      font-size: 14px;
-      transition: 0.3s;
-    }
+@keyframes slideUp {
+  to { transform: translateY(0); }
+}
 
-    .btn:hover {
-      background: rgba(255,255,255,0.35);
-    }
+.name {
+  font-size: 24px;
+  font-weight: 700;
+}
 
-    @media (max-width: 480px) {
-      .card {
-        padding: 25px 20px;
-      }
-    }
-  </style>
+.job {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+.desc {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 20px;
+}
+
+/* ===== 버튼 ===== */
+.buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  background: #1f2d3d;
+  text-align: center;
+  font-size: 14px;
+  text-decoration: none;
+  color: #fff;
+}
+
+/* ===== 메뉴 ===== */
+.menu {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.menu div {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* ===== 회사 정보 ===== */
+.company {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 15px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.logo {
+  width: 40px;
+  margin-bottom: 10px;
+}
+
+</style>
 </head>
 
 <body>
 
+<!-- 인트로 -->
+<div class="intro">
+  <img src="https://i.imgur.com/yourlogo.png">
+</div>
+
+<div class="main">
+
+  <div class="bg"></div>
+
+  <!-- 하단 카드 -->
   <div class="card">
-    
-    <div class="profile"></div>
 
     <div class="name">이도헌</div>
     <div class="job">Authentic Planner</div>
+    <div class="desc">고객과의 소통 그게 우선입니다.</div>
 
-    <div class="phone">📞 010-3099-3774</div>
-
-    <div class="message">
-      고객과의 소통<br>
-      그게 우선입니다.
+    <!-- 버튼 -->
+    <div class="buttons">
+      <a href="tel:01030993774" class="btn">전화하기</a>
+      <a href="sms:01030993774" class="btn">문자하기</a>
     </div>
 
-    <a href="https://www.instagram.com/idoheon_?igsh=Zjk3a284dTRlMzQz" target="_blank" class="btn">
-      Instagram 보기
-    </a>
+    <!-- 메뉴 -->
+    <div class="menu">
+      <div>보장분석</div>
+      <div>보험금청구</div>
+      <div>내보험조회</div>
+      <div>상담신청</div>
+    </div>
+
+    <!-- 회사 -->
+    <div class="company">
+      <img src="https://i.imgur.com/yourlogo.png" class="logo">
+      <div>(주)어센틱금융그룹</div>
+      <div>인천 남동구 인주대로 593</div>
+      <div>6층 어센틱금융그룹</div>
+    </div>
 
   </div>
+
+</div>
 
 </body>
 </html>
