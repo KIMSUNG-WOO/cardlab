@@ -1,6 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-// 싱글톤으로 캐싱됨 (createBrowserClient 기본 동작)
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -6,141 +6,52 @@ import { createClient } from '@/lib/supabase/client'
 import { TEMPLATE_OPTIONS, DEFAULT_TEMPLATE_KEY } from '@/lib/templates'
 import { isValidSlug, nullToEmpty } from '@/lib/utils'
 import type { BusinessCard, CardFormData, TemplateKey } from '@/lib/types'
-import { Loader2, CheckCircle2 } from 'lucide-react'
 
 interface Props {
   mode: 'create' | 'edit'
   card?: BusinessCard
 }
 
-// ── 입력 필드 공통 컴포넌트 ────────────────────────────────
-function Field({
-  label,
-  required,
-  hint,
-  children,
-}: {
-  label: string
-  required?: boolean
-  hint?: string
-  children: React.ReactNode
-}) {
+const inputStyle = {
+  width: '100%',
+  padding: '12px 16px',
+  background: '#0d1520',
+  border: '1px solid #1e2d42',
+  borderRadius: 12,
+  color: '#e2e8f0',
+  fontSize: 14,
+  outline: 'none',
+  boxSizing: 'border-box' as const,
+}
+
+const labelStyle = {
+  display: 'block',
+  fontSize: 12,
+  color: '#64748b',
+  marginBottom: 6,
+}
+
+function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-xs font-medium mb-1.5" style={{ color: '#64748b' }}>
-        {label}
-        {required && <span className="ml-0.5" style={{ color: '#ef4444' }}>*</span>}
-      </label>
+    <div style={{ marginBottom: 16 }}>
+      <label style={labelStyle}>{label}{required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}</label>
       {children}
-      {hint && (
-        <p className="mt-1 text-xs" style={{ color: '#374151' }}>
-          {hint}
-        </p>
-      )}
+      {hint && <p style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{hint}</p>}
     </div>
-  )
-}
-
-function Input({
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-  disabled,
-}: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-  type?: string
-  disabled?: boolean
-}) {
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      disabled={disabled}
-      className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-      style={{
-        background: '#0d1520',
-        border: '1px solid #1e2d42',
-        color: '#e2e8f0',
-        caretColor: '#3b82f6',
-        opacity: disabled ? 0.5 : 1,
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = '#2563eb'
-        e.target.style.boxShadow = '0 0 0 2px rgba(37,99,235,0.12)'
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = '#1e2d42'
-        e.target.style.boxShadow = 'none'
-      }}
-    />
-  )
-}
-
-function Textarea({
-  value,
-  onChange,
-  placeholder,
-  rows = 3,
-}: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-  rows?: number
-}) {
-  return (
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all resize-none"
-      style={{
-        background: '#0d1520',
-        border: '1px solid #1e2d42',
-        color: '#e2e8f0',
-        caretColor: '#3b82f6',
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = '#2563eb'
-        e.target.style.boxShadow = '0 0 0 2px rgba(37,99,235,0.12)'
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = '#1e2d42'
-        e.target.style.boxShadow = 'none'
-      }}
-    />
   )
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="pt-2 pb-1"
-      style={{ borderBottom: '1px solid #0d1520' }}
-    >
-      <p className="text-xs font-semibold tracking-wider" style={{ color: '#1e3a5f' }}>
-        {children}
-      </p>
-    </div>
-  )
+  return <p style={{ fontSize: 11, fontWeight: 600, color: '#1e3a5f', letterSpacing: '0.1em', paddingBottom: 8, borderBottom: '1px solid #0d1520', marginBottom: 16, marginTop: 8 }}>{children}</p>
 }
 
-// ── 메인 폼 ───────────────────────────────────────────────
 export function CardForm({ mode, card }: Props) {
   const router = useRouter()
   const supabase = createClient()
-
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const [slugError, setSlugError] = useState('')
 
-  // 폼 상태 초기화
   const [form, setForm] = useState<CardFormData>({
     slug: card?.slug ?? '',
     name: card?.name ?? '',
@@ -163,23 +74,12 @@ export function CardForm({ mode, card }: Props) {
   })
 
   function set(key: keyof CardFormData) {
-    return (val: string | boolean) =>
-      setForm((prev) => ({ ...prev, [key]: val }))
-  }
-
-  // slug 유효성 검사
-  function validateSlug(val: string) {
-    if (!val) return setSlugError('slug는 필수입니다.')
-    if (!isValidSlug(val)) return setSlugError('영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다.')
-    if (val.length < 2) return setSlugError('2자 이상 입력해주세요.')
-    if (val.length > 50) return setSlugError('50자 이하로 입력해주세요.')
-    setSlugError('')
+    return (val: string | boolean) => setForm(prev => ({ ...prev, [key]: val }))
   }
 
   async function handleSubmit() {
-    // 유효성 검사
     if (!form.slug) return setError('slug를 입력해주세요.')
-    if (slugError) return setError(slugError)
+    if (!isValidSlug(form.slug)) return setError('slug는 영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다.')
     if (!form.name) return setError('이름을 입력해주세요.')
     if (!form.position) return setError('직함을 입력해주세요.')
     if (!form.company_name) return setError('회사명을 입력해주세요.')
@@ -211,277 +111,114 @@ export function CardForm({ mode, card }: Props) {
       }
 
       if (mode === 'create') {
-        // slug 중복 체크
-        const { data: existing } = await supabase
-          .from('business_cards')
-          .select('id')
-          .eq('slug', payload.slug)
-          .single()
-
+        const { data: existing } = await supabase.from('business_cards').select('id').eq('slug', payload.slug).single()
         if (existing) {
-          setError(`"/${payload.slug}" slug는 이미 사용 중입니다. 다른 slug를 입력해주세요.`)
+          setError(`"/${payload.slug}" slug는 이미 사용 중입니다.`)
           setSaving(false)
           return
         }
-
-        const { error: insertError } = await supabase
-          .from('business_cards')
-          .insert(payload)
-
-        if (insertError) throw insertError
+        const { error: e } = await supabase.from('business_cards').insert(payload)
+        if (e) throw e
       } else {
-        const { error: updateError } = await supabase
-          .from('business_cards')
-          .update(payload)
-          .eq('id', card!.id)
-
-        if (updateError) throw updateError
+        const { error: e } = await supabase.from('business_cards').update(payload).eq('id', card!.id)
+        if (e) throw e
       }
 
       setSaved(true)
-      setTimeout(() => {
-        router.push('/admin/dashboard')
-        router.refresh()
-      }, 800)
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.'
-      setError(msg)
+      setTimeout(() => { router.push('/admin/dashboard'); router.refresh() }, 800)
+    } catch (e: any) {
+      setError(e?.message ?? '저장 중 오류가 발생했습니다.')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div
-      className="rounded-2xl p-6 flex flex-col gap-5"
-      style={{
-        background: '#0d1520',
-        border: '1px solid #1e2d42',
-      }}
-    >
-      {/* ── 기본 정보 ── */}
+    <div style={{ background: '#0d1520', border: '1px solid #1e2d42', borderRadius: 20, padding: 24 }}>
       <SectionTitle>기본 정보</SectionTitle>
 
-      <Field
-        label="Slug (URL 경로)"
-        required
-        hint={`cardlab.digital/${form.slug || 'slug'}`}
-      >
-        <Input
-          value={form.slug}
-          onChange={(v) => {
-            set('slug')(v)
-            validateSlug(v)
-          }}
-          placeholder="예: kim-suho, authentic-lee"
-          disabled={mode === 'edit'}
-        />
-        {slugError && (
-          <p className="mt-1 text-xs" style={{ color: '#ef4444' }}>
-            {slugError}
-          </p>
-        )}
+      <Field label="Slug (URL 경로)" required hint={`cardlab.digital/${form.slug || 'slug'}`}>
+        <input style={inputStyle} value={form.slug} onChange={e => set('slug')(e.target.value)} placeholder="예: kim-suho" disabled={mode === 'edit'} />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="이름" required>
-          <Input value={form.name} onChange={set('name')} placeholder="홍길동" />
-        </Field>
-        <Field label="영문명 / 부제목">
-          <Input value={form.english_name} onChange={set('english_name')} placeholder="Authentic Planner" />
-        </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="이름" required><input style={inputStyle} value={form.name} onChange={e => set('name')(e.target.value)} placeholder="홍길동" /></Field>
+        <Field label="영문명"><input style={inputStyle} value={form.english_name} onChange={e => set('english_name')(e.target.value)} placeholder="Authentic Planner" /></Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="직함" required>
-          <Input value={form.position} onChange={set('position')} placeholder="재무설계사" />
-        </Field>
-        <Field label="팀 / 브랜치명">
-          <Input value={form.team_name} onChange={set('team_name')} placeholder="WITH Branch" />
-        </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="직함" required><input style={inputStyle} value={form.position} onChange={e => set('position')(e.target.value)} placeholder="재무설계사" /></Field>
+        <Field label="팀/브랜치명"><input style={inputStyle} value={form.team_name} onChange={e => set('team_name')(e.target.value)} placeholder="WITH Branch" /></Field>
       </div>
 
-      <Field label="회사명" required>
-        <Input value={form.company_name} onChange={set('company_name')} placeholder="어센틱금융그룹" />
-      </Field>
+      <Field label="회사명" required><input style={inputStyle} value={form.company_name} onChange={e => set('company_name')(e.target.value)} placeholder="어센틱금융그룹" /></Field>
 
       <Field label="한 줄 소개">
-        <Textarea
-          value={form.short_intro}
-          onChange={set('short_intro')}
-          placeholder="고객과의 소통, 그게 우선입니다."
-          rows={2}
-        />
+        <textarea style={{ ...inputStyle, resize: 'none' }} rows={2} value={form.short_intro} onChange={e => set('short_intro')(e.target.value)} placeholder="고객과의 소통, 그게 우선입니다." />
       </Field>
 
-      {/* ── 연락처 ── */}
-      <SectionTitle>연락처 정보</SectionTitle>
+      <SectionTitle>연락처</SectionTitle>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="휴대폰">
-          <Input value={form.phone} onChange={set('phone')} placeholder="010-0000-0000" type="tel" />
-        </Field>
-        <Field label="이메일">
-          <Input value={form.email} onChange={set('email')} placeholder="name@email.com" type="email" />
-        </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="휴대폰"><input style={inputStyle} value={form.phone} onChange={e => set('phone')(e.target.value)} placeholder="010-0000-0000" /></Field>
+        <Field label="이메일"><input style={inputStyle} value={form.email} onChange={e => set('email')(e.target.value)} placeholder="name@email.com" /></Field>
       </div>
 
-      <Field label="주소">
-        <Input value={form.address} onChange={set('address')} placeholder="인천광역시 남동구 인주대로593 6층" />
-      </Field>
+      <Field label="주소"><input style={inputStyle} value={form.address} onChange={e => set('address')(e.target.value)} placeholder="인천광역시 남동구 인주대로593 6층" /></Field>
 
-      {/* ── 링크 ── */}
       <SectionTitle>링크 & SNS</SectionTitle>
 
-      <Field label="웹사이트 URL">
-        <Input value={form.website_url} onChange={set('website_url')} placeholder="https://www.afg.kr" />
-      </Field>
+      <Field label="웹사이트 URL"><input style={inputStyle} value={form.website_url} onChange={e => set('website_url')(e.target.value)} placeholder="https://www.afg.kr" /></Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="인스타그램 URL">
-          <Input value={form.instagram_url} onChange={set('instagram_url')} placeholder="https://instagram.com/..." />
-        </Field>
-        <Field label="카카오 채널 URL">
-          <Input value={form.kakao_url} onChange={set('kakao_url')} placeholder="https://pf.kakao.com/..." />
-        </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="인스타그램 URL"><input style={inputStyle} value={form.instagram_url} onChange={e => set('instagram_url')(e.target.value)} placeholder="https://instagram.com/..." /></Field>
+        <Field label="카카오 채널 URL"><input style={inputStyle} value={form.kakao_url} onChange={e => set('kakao_url')(e.target.value)} placeholder="https://pf.kakao.com/..." /></Field>
       </div>
 
-      <Field label="문의 URL">
-        <Input value={form.inquiry_url} onChange={set('inquiry_url')} placeholder="https://..." />
-      </Field>
-
-      {/* ── 이미지 ── */}
       <SectionTitle>이미지</SectionTitle>
 
-      <Field label="프로필 이미지 URL" hint="Supabase Storage에 업로드 후 URL 입력">
-        <Input value={form.profile_image_url} onChange={set('profile_image_url')} placeholder="https://...supabase.co/storage/..." />
+      <Field label="프로필 이미지 URL" hint="Supabase Storage 업로드 후 URL 입력">
+        <input style={inputStyle} value={form.profile_image_url} onChange={e => set('profile_image_url')(e.target.value)} placeholder="https://...supabase.co/storage/..." />
       </Field>
 
-      <Field label="커버 / 배경 이미지 URL">
-        <Input value={form.cover_image_url} onChange={set('cover_image_url')} placeholder="https://..." />
-      </Field>
-
-      {/* ── 디자인 템플릿 ── */}
       <SectionTitle>디자인 템플릿</SectionTitle>
 
-      <Field label="템플릿 선택" required>
-        <div className="grid grid-cols-1 gap-2">
-          {TEMPLATE_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all"
-              style={{
-                background:
-                  form.template_key === opt.value ? '#0f1f35' : '#0a1220',
-                border: `1px solid ${
-                  form.template_key === opt.value ? '#2563eb' : '#1e2d42'
-                }`,
-              }}
-            >
-              <input
-                type="radio"
-                name="template"
-                value={opt.value}
-                checked={form.template_key === opt.value}
-                onChange={() => set('template_key')(opt.value as TemplateKey)}
-                className="sr-only"
-              />
-              <div
-                className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                style={{
-                  borderColor:
-                    form.template_key === opt.value ? '#2563eb' : '#1e2d42',
-                  background:
-                    form.template_key === opt.value ? '#2563eb' : 'transparent',
-                }}
-              >
-                {form.template_key === opt.value && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                )}
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: '#e2e8f0' }}>
-                  {opt.label}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: '#374151' }}>
-                  {opt.description}
-                </p>
-              </div>
-            </label>
-          ))}
-        </div>
-      </Field>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+        {TEMPLATE_OPTIONS.map(opt => (
+          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: form.template_key === opt.value ? '#0f1f35' : '#0a1220', border: `1px solid ${form.template_key === opt.value ? '#2563eb' : '#1e2d42'}`, borderRadius: 12, cursor: 'pointer' }}>
+            <input type="radio" name="template" value={opt.value} checked={form.template_key === opt.value} onChange={() => set('template_key')(opt.value as TemplateKey)} style={{ accentColor: '#2563eb' }} />
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', margin: 0 }}>{opt.label}</p>
+              <p style={{ fontSize: 11, color: '#374151', margin: '2px 0 0' }}>{opt.description}</p>
+            </div>
+          </label>
+        ))}
+      </div>
 
-      {/* ── 공개 설정 ── */}
       <SectionTitle>공개 설정</SectionTitle>
 
-      <label className="flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer" style={{ background: '#0a1220', border: '1px solid #1e2d42' }}>
+      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#0a1220', border: '1px solid #1e2d42', borderRadius: 12, cursor: 'pointer', marginBottom: 24 }}>
         <div>
-          <p className="text-sm font-medium" style={{ color: '#e2e8f0' }}>
-            명함 공개
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: '#374151' }}>
-            비공개 시 URL 접근이 404로 처리됩니다
-          </p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', margin: 0 }}>명함 공개</p>
+          <p style={{ fontSize: 11, color: '#374151', margin: '2px 0 0' }}>비공개 시 URL 접근이 404로 처리됩니다</p>
         </div>
-        <div
-          className="relative w-12 h-6 rounded-full transition-colors"
-          style={{ background: form.is_active ? '#1e40af' : '#1e2d42' }}
-          onClick={() => set('is_active')(!form.is_active)}
-        >
-          <div
-            className="absolute top-0.5 w-5 h-5 rounded-full transition-transform"
-            style={{
-              background: '#ffffff',
-              transform: form.is_active ? 'translateX(26px)' : 'translateX(2px)',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-            }}
-          />
+        <div onClick={() => set('is_active')(!form.is_active)} style={{ width: 48, height: 24, borderRadius: 12, background: form.is_active ? '#1e40af' : '#1e2d42', position: 'relative', cursor: 'pointer', transition: 'background 0.2s' }}>
+          <div style={{ position: 'absolute', top: 2, width: 20, height: 20, borderRadius: '50%', background: '#ffffff', transform: form.is_active ? 'translateX(26px)' : 'translateX(2px)', transition: 'transform 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
         </div>
       </label>
 
-      {/* ── 에러 메시지 ── */}
       {error && (
-        <div
-          className="px-4 py-3 rounded-xl text-sm"
-          style={{
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            color: '#f87171',
-          }}
-        >
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, color: '#f87171', fontSize: 13 }}>
           {error}
         </div>
       )}
 
-      {/* ── 저장 버튼 ── */}
       <button
         onClick={handleSubmit}
         disabled={saving || saved}
-        className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-60 mt-2"
-        style={{
-          background: saved
-            ? 'linear-gradient(135deg, #065f46, #047857)'
-            : 'linear-gradient(135deg, #1e3a5f, #1e40af)',
-          color: '#ffffff',
-          boxShadow: '0 4px 20px rgba(30,64,175,0.25)',
-        }}
+        style={{ width: '100%', padding: '14px', background: saved ? 'linear-gradient(135deg, #065f46, #047857)' : 'linear-gradient(135deg, #1e3a5f, #1e40af)', color: '#ffffff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: saving || saved ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
       >
-        {saving ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin" />
-            저장 중...
-          </span>
-        ) : saved ? (
-          <span className="flex items-center justify-center gap-2">
-            <CheckCircle2 size={16} />
-            저장 완료!
-          </span>
-        ) : mode === 'create' ? (
-          '명함 생성하기'
-        ) : (
-          '변경 사항 저장'
-        )}
+        {saving ? '저장 중...' : saved ? '✓ 저장 완료!' : mode === 'create' ? '명함 생성하기' : '변경 사항 저장'}
       </button>
     </div>
   )

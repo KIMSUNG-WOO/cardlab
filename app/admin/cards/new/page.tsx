@@ -1,10 +1,7 @@
 import { redirect } from 'next/navigation'
-import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { AdminHeader } from '@/components/admin/admin-header'
 import { CardForm } from '@/components/admin/card-form'
-
-export const metadata: Metadata = { title: '새 명함 만들기' }
 
 export default async function NewCardPage() {
   const supabase = await createClient()
@@ -12,21 +9,11 @@ export default async function NewCardPage() {
   if (!user) redirect('/admin/login')
 
   return (
-    <div className="min-h-dvh" style={{ background: '#080e18' }}>
+    <div>
       <AdminHeader userEmail={user.email ?? ''} />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <a
-            href="/admin/dashboard"
-            className="text-sm flex items-center gap-1 mb-4"
-            style={{ color: '#374151' }}
-          >
-            ← 목록으로
-          </a>
-          <h1 className="text-xl font-bold" style={{ color: '#e2e8f0' }}>
-            새 명함 만들기
-          </h1>
-        </div>
+      <main style={{ maxWidth: 672, margin: '0 auto', padding: '32px 16px' }}>
+        <a href="/admin/dashboard" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', display: 'block', marginBottom: 16 }}>← 목록으로</a>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0', marginBottom: 24 }}>새 명함 만들기</h1>
         <CardForm mode="create" />
       </main>
     </div>
