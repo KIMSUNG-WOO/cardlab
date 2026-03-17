@@ -1,20 +1,9 @@
-import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+export function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(' ')
 }
-
-export function isValidSlug(slug: string): boolean {
-  return /^[a-z0-9-]+$/.test(slug)
-}
-
-export function ensureHttps(url: string): string {
+export function isValidSlug(s: string) { return /^[a-z0-9-]+$/.test(s) }
+export function ensureHttps(url: string) {
   if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return `https://${url}`
+  return url.startsWith('http') ? url : `https://${url}`
 }
-
-export function nullToEmpty(val: string | null | undefined): string {
-  return val ?? ''
-}
+export function nullToEmpty(v: string | null | undefined) { return v ?? '' }

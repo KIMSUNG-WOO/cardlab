@@ -4,20 +4,24 @@
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
-html {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+body { font-family: 'Pretendard', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 
 .touch-btn {
   min-height: 52px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 히어로 이미지 패럴랙스 효과 */
+.hero-img {
+  transition: transform 0.3s ease-out;
+}
+
+/* 크롭 모달 */
+.crop-container {
+  max-height: 60vh;
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

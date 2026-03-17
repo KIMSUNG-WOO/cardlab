@@ -1,52 +1,32 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
-
+  let res = NextResponse.next({ request })
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet: any[]) {
-          cookiesToSet.forEach(({ name, value }: any) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }: any) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value }: any) => request.cookies.set(name, value))
+          res = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }: any) => res.cookies.set(name, value, options))
         },
       },
     }
   )
-
   const { data: { user } } = await supabase.auth.getUser()
-  const pathname = request.nextUrl.pathname
-
-  if (pathname === '/admin/login') {
-    if (user) {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-    }
-    return supabaseResponse
+  const path = request.nextUrl.pathname
+  if (path === '/admin/login') {
+    if (user) return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    return res
   }
-
-  if (pathname.startsWith('/admin')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
+  if (path.startsWith('/admin') && !user) {
+    return NextResponse.redirect(new URL('/admin/login', request.url))
   }
-
-  return supabaseResponse
+  return res
 }
-
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

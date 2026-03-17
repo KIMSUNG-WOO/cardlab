@@ -1,13 +1,4 @@
-export type TemplateKey = 'authentic-finance' | 'minimal-dark'
-
-export interface CardLink {
-  id?: string
-  label: string
-  type: string
-  url: string
-  sort_order: number
-  is_visible: boolean
-}
+export type TemplateKey = 'afg-dark' | 'afg-light' | 'modern-gray' | 'navy-pro' | 'clean-white'
 
 export interface BusinessCard {
   id: string
@@ -26,31 +17,17 @@ export interface BusinessCard {
   inquiry_url?: string | null
   address?: string | null
   profile_image_url?: string | null
-  cover_image_url?: string | null
+  // 메뉴 항목 URL
+  menu_insurance_claim_url?: string | null
+  menu_check_insurance_url?: string | null
+  menu_analysis_url?: string | null
+  menu_consult_url?: string | null
+  // 템플릿
   template_key: TemplateKey
+  template_color?: string | null  // 색상 커스터마이징
   is_active: boolean
-  links?: CardLink[]
   created_at: string
   updated_at: string
 }
 
-export type CardFormData = {
-  slug: string
-  name: string
-  english_name: string
-  position: string
-  company_name: string
-  team_name: string
-  short_intro: string
-  phone: string
-  email: string
-  website_url: string
-  instagram_url: string
-  kakao_url: string
-  inquiry_url: string
-  address: string
-  profile_image_url: string
-  cover_image_url: string
-  template_key: TemplateKey
-  is_active: boolean
-}
+export type CardFormData = Omit<BusinessCard, 'id' | 'created_at' | 'updated_at'>

@@ -1,18 +1,7 @@
 import type { Config } from 'tailwindcss'
-
 const config: Config = {
-  content: [
-    './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-  ],
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-      },
-    },
-  },
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  theme: { extend: { fontFamily: { sans: ['Pretendard', 'system-ui', 'sans-serif'] } } },
   plugins: [],
 }
-
 export default config
