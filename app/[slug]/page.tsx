@@ -87,7 +87,7 @@ export default async function SlugPage({ params }: Props) {
 
   const { data: card } = await supabase
     .from('business_cards')
-    .select('*, card_news(id,title,summary,image_url,link_url,category,sort_order,is_visible,created_at)')
+    .select('*, company_background_url, card_news(id,title,summary,image_url,link_url,category,sort_order,is_visible,created_at)')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
