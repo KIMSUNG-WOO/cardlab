@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>CardLab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 카톡 미리보기 -->
+  <meta property="og:title" content="CardLab 디지털 명함">
+  <meta property="og:description" content="모바일 명함 서비스">
+  <meta property="og:image" content="https://via.placeholder.com/400">
+  <meta property="og:type" content="website">
+
+  <style>
+    body {
+      margin:0;
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:linear-gradient(135deg,#6a5cff,#3a8bff);
+      color:white;
+      font-family:sans-serif;
+    }
+    h1 {
+      font-size:28px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔥 CardLab 시작됨 🔥</h1>
+</body>
+</html>
