@@ -791,28 +791,4 @@ export function CardForm({ mode, card, companies = [] }: Props) {
       </div>
     </div>
   )
-
-  function NumInput({ label, value, min, max, step, unit, onChange, recommend }: {
-    label:string; value:number; min:number; max:number; step?:number; unit?:string
-    onChange:(v:number)=>void; recommend?:number
-  }) {
-    const s = step ?? 1
-    return (
-      <div>
-        <label style={{ display:'block', fontSize:11, color:'#495057', fontWeight:600, marginBottom:4 }}>
-          {label} {recommend && <span style={{ color:'#adb5bd', fontWeight:400 }}>(추천: {recommend})</span>}
-        </label>
-        <div style={{ display:'flex', alignItems:'center' }}>
-          <button type="button" onClick={() => onChange(Math.max(min, value - s))}
-            style={{ width:32, height:36, background:'#f1f3f5', border:'1px solid #dee2e6', borderRadius:'8px 0 0 8px', cursor:'pointer', fontSize:16, fontWeight:700, color:'#495057' }}>−</button>
-          <input type="number" min={min} max={max} value={value}
-            onChange={e => onChange(Number(e.target.value))}
-            style={{ ...I, textAlign:'center', borderRadius:0, width:64, padding:'7px 0', fontSize:14, fontWeight:700, borderLeft:'none', borderRight:'none' }} />
-          <button type="button" onClick={() => onChange(Math.min(max, value + s))}
-            style={{ width:32, height:36, background:'#f1f3f5', border:'1px solid #dee2e6', borderRadius:'0 8px 8px 0', cursor:'pointer', fontSize:16, fontWeight:700, color:'#495057' }}>+</button>
-          {unit && <span style={{ fontSize:12, color:'#adb5bd', marginLeft:6 }}>{unit}</span>}
-        </div>
-      </div>
-    )
-  }
 }
