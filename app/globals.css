@@ -4,25 +4,90 @@
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
+*, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-body { font-family: 'Pretendard', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
+/* ── 터치 버튼 ── */
 .touch-btn {
   min-height: 52px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 
-/* 히어로 이미지 패럴랙스 효과 */
-.hero-img {
-  transition: transform 0.3s ease-out;
+/* ── 관리자 페이지 밝은 테마 ── */
+.admin-bg { background: #f1f3f5; min-height: 100dvh; }
+
+.admin-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  color: #212529;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-input:focus {
+  border-color: #4263eb;
+  box-shadow: 0 0 0 3px rgba(66,99,235,0.1);
+}
+.admin-input::placeholder { color: #ced4da; }
+.admin-input:disabled { background: #f8f9fa; opacity: 0.7; }
+
+.admin-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  padding: 20px;
 }
 
-/* 크롭 모달 */
-.crop-container {
-  max-height: 60vh;
-  overflow: hidden;
+.admin-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #868e96;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f3f5;
+  margin-bottom: 18px;
 }
+
+/* ── 공개 명함 페이지 모션 ── */
+.hero-enter { animation: heroEnter 1s cubic-bezier(0.22,1,0.36,1) forwards; }
+@keyframes heroEnter {
+  from { opacity: 0; transform: scale(1.06); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fade-up-1 { opacity: 0; animation: fadeSlideUp 0.6s 0.4s ease-out forwards; }
+.fade-up-2 { opacity: 0; animation: fadeSlideUp 0.6s 0.55s ease-out forwards; }
+.fade-up-3 { opacity: 0; animation: fadeSlideUp 0.6s 0.7s ease-out forwards; }
+.fade-up-4 { opacity: 0; animation: fadeSlideUp 0.6s 0.85s ease-out forwards; }
+.fade-up-5 { opacity: 0; animation: fadeSlideUp 0.6s 1.0s ease-out forwards; }
+.fade-up-6 { opacity: 0; animation: fadeSlideUp 0.6s 1.15s ease-out forwards; }
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 카드뉴스 스크롤 */
+.news-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.news-scroll::-webkit-scrollbar { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

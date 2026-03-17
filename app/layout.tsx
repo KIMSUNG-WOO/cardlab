@@ -5,10 +5,7 @@ export const metadata: Metadata = {
   title: { default: 'CardLab', template: '%s | CardLab' },
   description: '모바일 디지털 명함 플랫폼',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cardlab.digital'),
-  icons: {
-    icon: '/icons/favicon.svg',
-    apple: '/icons/apple-touch-icon.png',
-  },
+  icons: { icon: '/icons/favicon.svg' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -24,44 +25,50 @@ export function CardList({ cards: init }: { cards: Card[] }) {
   }
 
   if (!cards.length) return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'80px 0', background:'#0d1520', border:'1px dashed #1e2d42', borderRadius:20 }}>
-      <p style={{ fontSize:14, color:'#374151' }}>등록된 명함이 없습니다</p>
-      <p style={{ fontSize:12, color:'#1e2d42', marginTop:4 }}>+ 새 명함 버튼으로 만들어보세요</p>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'60px 0', background:'#fff', border:'2px dashed #dee2e6', borderRadius:16 }}>
+      <p style={{ fontSize:14, color:'#adb5bd', marginBottom:4 }}>등록된 명함이 없습니다</p>
+      <p style={{ fontSize:12, color:'#dee2e6' }}>+ 새 명함 버튼으로 만들어보세요</p>
     </div>
   )
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
       {cards.map(card => {
         const tpl = TEMPLATES[card.template_key]
         return (
-          <div key={card.id} style={{ background:'#0d1520', border:`1px solid ${confirmId===card.id?'rgba(239,68,68,0.3)':'#1e2d42'}`, borderRadius:16, padding:16 }}>
-            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:'flex', gap:6, marginBottom:6 }}>
-                  <span style={{ fontSize:11, padding:'2px 8px', borderRadius:6, background: card.is_active?'rgba(34,197,94,0.1)':'rgba(100,116,139,0.1)', color: card.is_active?'#4ade80':'#64748b', border:`1px solid ${card.is_active?'rgba(34,197,94,0.2)':'rgba(100,116,139,0.2)'}` }}>{card.is_active?'공개':'비공개'}</span>
-                  <span style={{ fontSize:11, padding:'2px 8px', borderRadius:6, background:'#0f1f35', color:'#3b82f6', border:'1px solid #1e3a5f' }}>
-                    <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:tpl?.preview??'#333', marginRight:4, verticalAlign:'middle' }}/>
-                    {tpl?.label??card.template_key}
-                  </span>
-                </div>
-                <p style={{ fontSize:14, fontWeight:600, color:'#e2e8f0', marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</p>
-                <p style={{ fontSize:12, color:'#4a5568', marginBottom:4 }}>{card.company_name}</p>
-                <p style={{ fontSize:11, color:'#1e3a5f', fontFamily:'monospace' }}>/{card.slug}</p>
+          <div key={card.id} style={{ background:'#fff', border:`1.5px solid ${confirmId===card.id?'#ffc9c9':'#e9ecef'}`, borderRadius:14, padding:16, display:'flex', alignItems:'center', gap:12, transition:'border-color 0.15s' }}>
+
+            {/* 템플릿 색상 닷 */}
+            <div style={{ width:36, height:36, borderRadius:10, background:tpl?.preview??'#ccc', border:'2px solid #e9ecef', flexShrink:0 }} />
+
+            {/* 정보 */}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
+                <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, fontWeight:700, background:card.is_active?'#d3f9d8':'#f1f3f5', color:card.is_active?'#2f9e44':'#868e96', border:`1px solid ${card.is_active?'#8ce99a':'#dee2e6'}` }}>
+                  {card.is_active?'공개':'비공개'}
+                </span>
+                <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'#e7f0ff', color:'#4263eb', fontWeight:600 }}>
+                  {tpl?.label??card.template_key}
+                </span>
               </div>
-              <div style={{ display:'flex', gap:6 }}>
-                <a href={`/${card.slug}`} target="_blank" rel="noopener noreferrer" style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'#111827', borderRadius:8, textDecoration:'none', fontSize:14 }} title="미리보기">🔗</a>
-                <a href={`/admin/cards/${card.id}`} style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'#111827', borderRadius:8, textDecoration:'none', fontSize:14 }} title="수정">✏️</a>
-                <button onClick={()=>toggle(card.id,card.is_active)} style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'#111827', border:'none', borderRadius:8, cursor:'pointer', fontSize:14 }} title="공개/비공개">{card.is_active?'🟢':'⚫'}</button>
-                <button onClick={()=>confirmId===card.id?del(card.id):setConfirmId(card.id)} style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', background: confirmId===card.id?'rgba(239,68,68,0.1)':'#111827', border:'none', borderRadius:8, cursor:'pointer', fontSize:14 }} title="삭제">🗑️</button>
-              </div>
+              <p style={{ fontSize:15, fontWeight:700, color:'#212529', marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</p>
+              <p style={{ fontSize:12, color:'#868e96', marginBottom:2 }}>{card.company_name}</p>
+              <p style={{ fontSize:11, color:'#4263eb', fontFamily:'monospace' }}>cardlab.digital/{card.slug}</p>
             </div>
-            {confirmId===card.id && (
-              <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid rgba(239,68,68,0.15)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <p style={{ fontSize:12, color:'#f87171' }}>한 번 더 누르면 비공개 처리됩니다.</p>
-                <button onClick={()=>setConfirmId(null)} style={{ fontSize:12, color:'#64748b', background:'none', border:'none', cursor:'pointer' }}>취소</button>
-              </div>
-            )}
+
+            {/* 액션 버튼 */}
+            <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+              <a href={`/${card.slug}`} target="_blank" rel="noopener noreferrer"
+                style={{ width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f3f5', borderRadius:8, textDecoration:'none', fontSize:15, border:'1px solid #dee2e6' }} title="미리보기">🔗</a>
+              <a href={`/admin/cards/${card.id}`}
+                style={{ width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f3f5', borderRadius:8, textDecoration:'none', fontSize:15, border:'1px solid #dee2e6' }} title="수정">✏️</a>
+              <button onClick={()=>toggle(card.id,card.is_active)}
+                style={{ width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f3f5', border:'1px solid #dee2e6', borderRadius:8, cursor:'pointer', fontSize:15 }} title="공개/비공개">
+                {card.is_active?'🟢':'⚫'}
+              </button>
+              <button onClick={()=>confirmId===card.id?del(card.id):setConfirmId(card.id)}
+                style={{ width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', background:confirmId===card.id?'#fff3f3':'#f1f3f5', border:`1px solid ${confirmId===card.id?'#ffc9c9':'#dee2e6'}`, borderRadius:8, cursor:'pointer', fontSize:15 }} title="삭제">🗑️</button>
+            </div>
           </div>
         )
       })}

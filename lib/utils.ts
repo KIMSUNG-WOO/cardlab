@@ -7,3 +7,6 @@ export function ensureHttps(url: string) {
   return url.startsWith('http') ? url : `https://${url}`
 }
 export function nullToEmpty(v: string | null | undefined) { return v ?? '' }
+export function generateId() {
+  return Math.random().toString(36).substring(2, 10)
+}

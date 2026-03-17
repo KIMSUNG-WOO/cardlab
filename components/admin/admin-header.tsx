@@ -1,21 +1,33 @@
 'use client'
+
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+
 export function AdminHeader({ userEmail }: { userEmail: string }) {
   const router = useRouter()
-  const supabase = createClient()
-  async function logout() { await supabase.auth.signOut(); router.push('/admin/login') }
+  async function logout() {
+    await createClient().auth.signOut()
+    router.push('/admin/login')
+  }
   return (
-    <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(8,14,24,0.95)', backdropFilter:'blur(12px)', borderBottom:'1px solid #0d1b2e' }}>
-      <div style={{ maxWidth:896, margin:'0 auto', padding:'0 16px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{ width:28, height:28, borderRadius:8, background:'linear-gradient(135deg,#1e3a5f,#1e40af)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" stroke="white" strokeWidth="2.2"/><line x1="2" y1="10" x2="22" y2="10" stroke="white" strokeWidth="2.2"/></svg>
+    <header style={{ background:'#fff', borderBottom:'1px solid #e9ecef', position:'sticky', top:0, zIndex:50 }}>
+      <div style={{ maxWidth:960, margin:'0 auto', padding:'0 20px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#4263eb,#3b5bdb)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="5" width="20" height="14" rx="3" stroke="white" strokeWidth="2.2"/>
+              <line x1="2" y1="10" x2="22" y2="10" stroke="white" strokeWidth="2.2"/>
+            </svg>
           </div>
-          <span style={{ fontSize:14, fontWeight:700, color:'#e2e8f0' }}>CardLab</span>
-          <span style={{ fontSize:10, padding:'2px 6px', background:'#0d1520', color:'#3b82f6', borderRadius:4 }}>Admin</span>
+          <span style={{ fontSize:15, fontWeight:700, color:'#212529' }}>CardLab</span>
+          <span style={{ fontSize:10, padding:'2px 7px', background:'#e7f0ff', color:'#4263eb', borderRadius:20, fontWeight:700 }}>Admin</span>
         </div>
-        <button onClick={logout} style={{ fontSize:12, color:'#64748b', background:'none', border:'none', cursor:'pointer' }}>로그아웃</button>
+        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+          <span style={{ fontSize:12, color:'#adb5bd' }}>{userEmail}</span>
+          <button onClick={logout} style={{ fontSize:12, color:'#868e96', background:'none', border:'1px solid #dee2e6', borderRadius:8, padding:'5px 12px', cursor:'pointer', fontWeight:600 }}>
+            로그아웃
+          </button>
+        </div>
       </div>
     </header>
   )

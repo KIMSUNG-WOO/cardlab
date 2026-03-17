@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
 export async function middleware(request: NextRequest) {
   let res = NextResponse.next({ request })
   const supabase = createServerClient(
@@ -27,6 +28,7 @@ export async function middleware(request: NextRequest) {
   }
   return res
 }
+
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

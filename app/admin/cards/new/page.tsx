@@ -10,9 +10,9 @@ export default async function NewCardPage() {
   return (
     <div>
       <AdminHeader userEmail={user.email ?? ''} />
-      <main style={{ maxWidth:672, margin:'0 auto', padding:'32px 16px' }}>
-        <a href="/admin/dashboard" style={{ fontSize:13, color:'#374151', textDecoration:'none', display:'block', marginBottom:16 }}>← 목록으로</a>
-        <h1 style={{ fontSize:20, fontWeight:700, color:'#e2e8f0', marginBottom:24 }}>새 명함 만들기</h1>
+      <main style={{ maxWidth:1100, margin:'0 auto', padding:'28px 20px' }}>
+        <a href="/admin/dashboard" style={{ fontSize:13, color:'#868e96', textDecoration:'none', display:'inline-block', marginBottom:20 }}>← 목록으로</a>
+        <h1 style={{ fontSize:22, fontWeight:700, color:'#212529', marginBottom:28 }}>새 명함 만들기</h1>
         <CardForm mode="create" />
       </main>
     </div>

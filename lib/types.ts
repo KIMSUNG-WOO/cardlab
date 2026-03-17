@@ -1,5 +1,31 @@
 export type TemplateKey = 'afg-dark' | 'afg-light' | 'modern-gray' | 'navy-pro' | 'clean-white'
 
+export type LinkType =
+  | 'phone' | 'sms' | 'email' | 'kakao'
+  | 'instagram' | 'youtube' | 'blog'
+  | 'website' | 'consult' | 'custom'
+
+export interface LinkItem {
+  id: string
+  type: LinkType
+  label: string
+  url: string
+  emoji: string
+}
+
+export interface CardNews {
+  id: string
+  card_id: string
+  title: string
+  summary: string
+  image_url?: string | null
+  link_url?: string | null
+  category: 'insurance' | 'finance' | 'policy' | 'news' | 'notice'
+  sort_order: number
+  is_visible: boolean
+  created_at: string
+}
+
 export interface BusinessCard {
   id: string
   slug: string
@@ -17,17 +43,16 @@ export interface BusinessCard {
   inquiry_url?: string | null
   address?: string | null
   profile_image_url?: string | null
-  // 메뉴 항목 URL
   menu_insurance_claim_url?: string | null
   menu_check_insurance_url?: string | null
   menu_analysis_url?: string | null
   menu_consult_url?: string | null
-  // 템플릿
+  extra_links?: LinkItem[] | null
   template_key: TemplateKey
-  template_color?: string | null  // 색상 커스터마이징
   is_active: boolean
   created_at: string
   updated_at: string
+  card_news?: CardNews[]
 }
 
-export type CardFormData = Omit<BusinessCard, 'id' | 'created_at' | 'updated_at'>
+export type CardFormData = Omit<BusinessCard, 'id' | 'created_at' | 'updated_at' | 'card_news'>
