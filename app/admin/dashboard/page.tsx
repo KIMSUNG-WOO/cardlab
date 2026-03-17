@@ -7,10 +7,12 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
+
   const { data: cards } = await supabase
     .from('business_cards')
     .select('id,slug,name,company_name,template_key,is_active,created_at')
     .order('created_at', { ascending: false })
+
   return (
     <div>
       <AdminHeader userEmail={user.email ?? ''} />

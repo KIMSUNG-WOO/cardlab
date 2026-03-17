@@ -1,1 +1,1 @@
-export { ModernGrayCard } from './other-cards'
+export { ModernGrayCard } from './all-other-cards'

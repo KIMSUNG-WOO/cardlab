@@ -1,1 +1,1 @@
-export { CleanWhiteCard } from './other-cards'
+export { CleanWhiteCard } from './all-other-cards'

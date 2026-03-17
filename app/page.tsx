@@ -1,5 +1,4 @@
 import Link from 'next/link'
-
 export default function HomePage() {
   return (
     <main style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#080e18 0%,#0a0a0a 100%)' }}>
@@ -8,7 +7,7 @@ export default function HomePage() {
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
             <rect x="2" y="5" width="20" height="14" rx="3" stroke="white" strokeWidth="2"/>
             <line x1="2" y1="10" x2="22" y2="10" stroke="white" strokeWidth="2"/>
-            <rect x="5" y="13" width="5" height="2" rx="1" fill="white"/>
+            <rect x="5" y="13" width="6" height="2" rx="1" fill="white"/>
           </svg>
         </div>
         <h1 style={{ fontSize:36, fontWeight:700, color:'#fff', marginBottom:8 }}>CardLab</h1>

@@ -1,1 +1,1 @@
-export { NavyProCard } from './other-cards'
+export { NavyProCard } from './all-other-cards'

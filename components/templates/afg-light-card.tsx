@@ -1,1 +1,1 @@
-export { AfgLightCard } from './other-cards'
+export { AfgLightCard } from './all-other-cards'
