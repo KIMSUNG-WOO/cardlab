@@ -13,7 +13,7 @@ export default async function EditCardPage({ params }: Props) {
 
   const [{ data: card }, { data: companies }] = await Promise.all([
     supabase.from('business_cards').select('*, card_news(*)').eq('id', id).single(),
-    supabase.from('companies').select('id,name,logo_url').order('name'),
+    supabase.from('companies').select('id,name,logo_url,background_url').order('name'),
   ])
 
   if (!card) notFound()

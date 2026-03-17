@@ -10,7 +10,7 @@ export default async function NewCardPage() {
 
   const { data: companies } = await supabase
     .from('companies')
-    .select('id,name,logo_url')
+    .select('id,name,logo_url,background_url')
     .order('name')
 
   return (
