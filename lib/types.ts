@@ -118,7 +118,8 @@ export interface CardDesignOptions {
   btn_size: 'sm' | 'md' | 'lg'
 
   profile_position_y?: number
-
+  profile_position_x?: number   // 좌우 위치 0~100 (기본 50)
+  profile_zoom?: number         // 확대/축소 100~200 (기본 100)
   custom_colors?: CustomColors | null
   labels?: AllLabels | null
 }
@@ -157,6 +158,8 @@ export const DEFAULT_DESIGN_OPTIONS: CardDesignOptions = {
   btn_radius: 'lg', btn_size: 'md',
   profile_position_y: 15,
   custom_colors: null, labels: null,
+  profile_position_x: 50,
+  profile_zoom: 100,
 }
 
 export const DEFAULT_LABELS: AllLabels = {
