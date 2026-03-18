@@ -321,6 +321,12 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   const menuPad       = isMobile ? '8px 3px' : '10px 3px'
   const menuGap       = isMobile ? 4 : 5
 
+  // 브랜드 배경이 있을 때 프로필 영역 폭 — 배경이 왼쪽에 노출되도록 우측으로 치우침
+  // 브랜드 배경 없으면 기존처럼 전체 커버
+  const hasBackground = !!bgImageUrl
+  const profileLeft   = hasBackground ? '30%' : '0'
+  const profileWidth  = hasBackground ? '70%' : '100%'
+
   function FooterLabel({ cfgKey }: { cfgKey: string }) {
     const cfgMap: Record<string, string> = {
       phone: 'phone_cfg', email: 'email_cfg', address: 'address_cfg',
@@ -366,20 +372,70 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
       />
 
       <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroH, maxHeight: heroMaxH, minHeight: heroMinH, transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
+
+        {/* zIndex 1: 브랜드 배경 이미지 — 항상 전체 커버 */}
         {bgImageUrl && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: 'url(' + bgImageUrl + ')', backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
         )}
+
+        {/* zIndex 2: 히어로 내 브랜드 로고 — 배경 있을 때만, 좌하단 고정 */}
+        {hasBackground && card.company_logo_url && (
+          <div style={{ position: 'absolute', bottom: 14, left: 14, zIndex: 2, pointerEvents: 'none' }}>
+            <img
+              src={card.company_logo_url}
+              alt={card.company_name}
+              style={{
+                height: logoH,
+                width: 'auto',
+                maxWidth: 120,
+                objectFit: 'contain',
+                opacity: 0.9,
+                mixBlendMode: isLightBg ? 'normal' : 'screen',
+              }}
+            />
+          </div>
+        )}
+
+        {/* zIndex 5: 프로필 사진 — 배경 있을 때는 우측 70%만 차지, 없으면 전체 */}
         {card.profile_image_url ? (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 5, overflow: 'hidden' }}>
+          <div style={{
+            position: 'absolute',
+            top: 0, bottom: 0,
+            left: profileLeft,
+            width: profileWidth,
+            zIndex: 5,
+            overflow: 'hidden',
+          }}>
             <img src={card.profile_image_url} alt={card.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? 'scale(' + profileScale + ')' : undefined, transformOrigin: profilePosX + '% ' + profilePosY + '%' }} />
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: objectPos,
+                transform: profileScale !== 1 ? 'scale(' + profileScale + ')' : undefined,
+                transformOrigin: profilePosX + '% ' + profilePosY + '%',
+              }} />
+            {/* 프로필 좌측 페이드 — 배경과 자연스럽게 겹치게 */}
+            {hasBackground && (
+              <div style={{
+                position: 'absolute',
+                top: 0, bottom: 0, left: 0,
+                width: '40%',
+                background: 'linear-gradient(to right, ' + t.heroBg + 'cc, transparent)',
+                pointerEvents: 'none',
+              }} />
+            )}
           </div>
         ) : (
           <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: t.cardBg, border: '2px solid ' + t.cardBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
           </div>
         )}
+
+        {/* zIndex 10: 하단 그라디언트 오버레이 */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ' + t.pageBg + '55 72%, ' + t.pageBg + ' 100%)' }} />
+
+        {/* zIndex 20: 팀 뱃지 */}
         {card.team_name && (
           <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fz.team, fontWeight: 600, border: '1px solid ' + t.cardBorder }}>
             {card.team_name}
