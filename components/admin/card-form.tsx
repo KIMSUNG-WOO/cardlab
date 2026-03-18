@@ -1,5 +1,6 @@
 'use client'
 
+import { parseDesign, getLogoStyle, getFooterLogoStyle, isLightBackground } from '@/components/templates/card-base'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -264,12 +265,23 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 30%' }} />
           )}
           {/* ✅ 프로필 위에 (zIndex 5) */}
-          {f.profile_image_url
-            ? <img src={f.profile_image_url} alt="" style={{ position: 'absolute', inset: 0, zIndex: 5, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `center ${profileY}%` }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            : <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {(() => {
+            const profileX = (design as any).profile_position_x ?? 50
+            const profileZoom = (design as any).profile_zoom ?? 100
+            const profileScale = profileZoom / 100
+            const objectPos = `${profileX}% ${profileY}%`
+            return f.profile_image_url ? (
+              <div style={{ position: 'absolute', inset: 0, zIndex: 5, overflow: 'hidden' }}>
+                <img src={f.profile_image_url} alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? `scale(${profileScale})` : undefined, transformOrigin: `${profileX}% ${profileY}%` }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              </div>
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ width: 66, height: 66, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>👤</div>
               </div>
-          }
+            )
+          })()}
           <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg,rgba(0,0,0,0.04) 0%,transparent 20%,transparent 50%,${pageBg}70 75%,${pageBg} 100%)` }} />
           {f.team_name && (
             <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: teamBadgeBg, backdropFilter: 'blur(8px)', color: teamBadgeText, fontSize: fzTeam * 0.85, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>
@@ -282,7 +294,11 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
         <div style={{ padding: '10px 14px 20px', marginTop: -4 }}>
           {/* ✅ 로고 — 흰 네모 없이 단순 img */}
           {logoUrl && (
-            <img src={logoUrl} alt="" style={{ display: 'block', height: logoH, width: 'auto', maxWidth: 120, objectFit: 'contain', marginBottom: 8, filter: isLightBg ? 'none' : 'brightness(0) invert(1)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            <img src={logoUrl} alt=""
+              style={isLightBg
+                ? { display: 'block', height: logoH, width: 'auto', maxWidth: 120, objectFit: 'contain', marginBottom: 8 }
+                : { display: 'block', height: logoH, width: 'auto', maxWidth: 120, objectFit: 'contain', marginBottom: 8, mixBlendMode: 'screen' as const }}
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           )}
           {f.name && <h1 style={{ fontSize: fzName, fontWeight: 700, color: textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{f.name}</h1>}
           {f.english_name && <p style={{ fontSize: Math.max(fzSub - 1, 10), color: accent, margin: '0 0 3px', fontWeight: 500 }}>{f.english_name}</p>}
@@ -445,6 +461,8 @@ export function CardForm({ mode, card, companies = [] }: Props) {
       btn_size:           raw.btn_size   ?? 'md',
       profile_position_y: typeof raw.profile_position_y === 'number' ? raw.profile_position_y : 15,
       custom_colors: raw.custom_colors ? {
+      profile_position_x: typeof raw.profile_position_x === 'number' ? raw.profile_position_x : 50,
+      profile_zoom:       typeof raw.profile_zoom       === 'number' ? raw.profile_zoom       : 100,
         page_bg:    raw.custom_colors.page_bg    ?? '#0a0a0a',
         card_bg:    raw.custom_colors.card_bg    ?? '#1a1a2e',
         btn_color:  raw.custom_colors.btn_color  ?? '#1e40af',
@@ -848,12 +866,45 @@ export function CardForm({ mode, card, companies = [] }: Props) {
             <SectionHeader>로고 크기 (0~100px)</SectionHeader>
             <NumInput label="회사 로고 높이" value={design.logo_height ?? 26} recommend={26} unit="px" onChange={v => setDes('logo_height')(v)} />
 
-            <SectionHeader>프로필 사진 위치</SectionHeader>
-            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 8 }}>값이 클수록 아래쪽</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input type="range" min={0} max={60} step={5} value={design.profile_position_y ?? 15}
-                onChange={e => setDes('profile_position_y')(Number(e.target.value))} style={{ flex: 1, accentColor: '#4263eb' }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#4263eb', minWidth: 36 }}>{design.profile_position_y ?? 15}%</span>
+            <SectionHeader>📸 프로필 사진 편집</SectionHeader>
+            <div style={{ background: '#f0f4ff', border: '1px solid #c5d7ff', borderRadius: 12, padding: '14px 16px', marginBottom: 4 }}>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#495057' }}>확대/축소 (줌)</label>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#4263eb' }}>{(design as any).profile_zoom ?? 100}%</span>
+                </div>
+                <input type="range" min={80} max={200} step={5} value={(design as any).profile_zoom ?? 100}
+                  onChange={e => setDes('profile_zoom' as any)(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#4263eb' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#adb5bd', marginTop: 2 }}>
+                  <span>80%</span><span>200%</span>
+                </div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#495057' }}>상하 위치 (위↑ 아래↓)</label>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#4263eb' }}>{design.profile_position_y ?? 15}%</span>
+                </div>
+                <input type="range" min={0} max={80} step={5} value={design.profile_position_y ?? 15}
+                  onChange={e => setDes('profile_position_y')(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#4263eb' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#adb5bd', marginTop: 2 }}>
+                  <span>위</span><span>아래</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#495057' }}>좌우 위치 (왼↔오른)</label>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#4263eb' }}>{(design as any).profile_position_x ?? 50}%</span>
+                </div>
+                <input type="range" min={0} max={100} step={5} value={(design as any).profile_position_x ?? 50}
+                  onChange={e => setDes('profile_position_x' as any)(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#4263eb' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#adb5bd', marginTop: 2 }}>
+                  <span>왼쪽</span><span>오른쪽</span>
+                </div>
+              </div>
+              <p style={{ fontSize: 11, color: '#6b7280', margin: '10px 0 0' }}>💡 오른쪽 미리보기에서 실시간 확인</p>
             </div>
 
             <SectionHeader>아이콘 설정</SectionHeader>

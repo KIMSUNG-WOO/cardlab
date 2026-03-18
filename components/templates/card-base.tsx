@@ -70,7 +70,7 @@ function ShareButton({ cardUrl, name }: { cardUrl: string; name: string }) {
     setTimeout(() => { setCopied(false); setOpen(false) }, 1500)
   }
   async function handleShare() {
-    if (navigator.share) { try { await navigator.share({ title: `${name}의 디지털 명함`, url: cardUrl }) } catch {} }
+    if (navigator.share) { try { await navigator.share({ title: name + '의 디지털 명함', url: cardUrl }) } catch {} }
     else setOpen(v => !v)
   }
   return (
@@ -94,10 +94,7 @@ function ShareButton({ cardUrl, name }: { cardUrl: string; name: string }) {
 
 function CopyPhone({ phone, color, fontSize }: { phone: string; color: string; fontSize: number }) {
   const [done, setDone] = useState(false)
-  async function handle() {
-    await copyToClipboard(phone); setDone(true)
-    setTimeout(() => setDone(false), 2000)
-  }
+  async function handle() { await copyToClipboard(phone); setDone(true); setTimeout(() => setDone(false), 2000) }
   return (
     <button onClick={handle} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color, fontSize, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
       {done ? '✅ 복사됨!' : phone}
@@ -119,40 +116,59 @@ export interface CardTheme {
   divider: string; labelColor: string; footerBg: string
 }
 
+// ── 공통 헬퍼 (미리보기/실제 명함 동일하게 사용) ──────────────
+export function parseDesign(raw: any): CardDesignOptions {
+  return {
+    ...DEFAULT_DESIGN_OPTIONS,
+    animation_type:     raw?.animation_type     ?? DEFAULT_DESIGN_OPTIONS.animation_type,
+    animation_speed:    raw?.animation_speed    ?? 'normal',
+    animation_delay:    typeof raw?.animation_delay  === 'number' ? raw.animation_delay  : 0,
+    animation_on:       typeof raw?.animation_on     === 'boolean' ? raw.animation_on    : true,
+    show_icon:          typeof raw?.show_icon         === 'boolean' ? raw.show_icon       : true,
+    show_text:          typeof raw?.show_text         === 'boolean' ? raw.show_text       : true,
+    icon_size:          typeof raw?.icon_size         === 'number'  ? raw.icon_size       : 22,
+    font_size_name:     typeof raw?.font_size_name    === 'number'  ? raw.font_size_name  : 28,
+    font_size_sub:      typeof raw?.font_size_sub     === 'number'  ? raw.font_size_sub   : 14,
+    font_size_body:     typeof raw?.font_size_body    === 'number'  ? raw.font_size_body  : 13,
+    font_size_team:     typeof raw?.font_size_team    === 'number'  ? raw.font_size_team  : 11,
+    logo_height:        typeof raw?.logo_height       === 'number'  ? raw.logo_height     : 26,
+    btn_radius:         raw?.btn_radius ?? 'lg',
+    btn_size:           raw?.btn_size   ?? 'md',
+    profile_position_y: typeof raw?.profile_position_y === 'number' ? raw.profile_position_y : 15,
+    profile_position_x: typeof raw?.profile_position_x === 'number' ? raw.profile_position_x : 50,
+    profile_zoom:       typeof raw?.profile_zoom       === 'number' ? raw.profile_zoom       : 100,
+    custom_colors:      raw?.custom_colors ?? null,
+    labels:             raw?.labels ?? null,
+  }
+}
+
+export function isLightBackground(pageBg: string): boolean {
+  return ['#ffffff', '#faf9f7', '#f5f6f8', '#f4f4f5', '#f0ede8'].includes(pageBg)
+}
+
+export function getLogoStyle(isLightBg: boolean, logoH: number): React.CSSProperties {
+  return isLightBg
+    ? { display: 'block', height: logoH, width: 'auto', maxWidth: 160, objectFit: 'contain', marginBottom: 10 }
+    : { display: 'block', height: logoH, width: 'auto', maxWidth: 160, objectFit: 'contain', marginBottom: 10, mixBlendMode: 'screen' }
+}
+
+export function getFooterLogoStyle(isLightBg: boolean, logoH: number): React.CSSProperties {
+  return isLightBg
+    ? { height: Math.max(logoH - 4, 18), width: 'auto', maxWidth: 90, objectFit: 'contain' }
+    : { height: Math.max(logoH - 4, 18), width: 'auto', maxWidth: 90, objectFit: 'contain', mixBlendMode: 'screen' }
+}
+
 export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme }) {
   const [heroCollapsed, setHeroCollapsed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const raw: any = card.design_options ?? {}
-  const design: CardDesignOptions = {
-    ...DEFAULT_DESIGN_OPTIONS,
-    animation_type:     raw.animation_type     ?? DEFAULT_DESIGN_OPTIONS.animation_type,
-    animation_speed:    raw.animation_speed    ?? 'normal',
-    animation_delay:    typeof raw.animation_delay  === 'number' ? raw.animation_delay  : 0,
-    animation_on:       typeof raw.animation_on     === 'boolean' ? raw.animation_on    : true,
-    show_icon:          typeof raw.show_icon         === 'boolean' ? raw.show_icon       : true,
-    show_text:          typeof raw.show_text         === 'boolean' ? raw.show_text       : true,
-    icon_size:          typeof raw.icon_size         === 'number'  ? raw.icon_size       : 22,
-    font_size_name:     typeof raw.font_size_name    === 'number'  ? raw.font_size_name  : 28,
-    font_size_sub:      typeof raw.font_size_sub     === 'number'  ? raw.font_size_sub   : 14,
-    font_size_body:     typeof raw.font_size_body    === 'number'  ? raw.font_size_body  : 13,
-    font_size_team:     typeof raw.font_size_team    === 'number'  ? raw.font_size_team  : 11,
-    logo_height:        typeof raw.logo_height       === 'number'  ? raw.logo_height     : 26,
-    btn_radius:         raw.btn_radius ?? 'lg',
-    btn_size:           raw.btn_size   ?? 'md',
-    profile_position_y: typeof raw.profile_position_y === 'number' ? raw.profile_position_y : 15,
-    profile_position_x: typeof raw.profile_position_x === 'number' ? raw.profile_position_x : 50,
-    profile_zoom:       typeof raw.profile_zoom       === 'number' ? raw.profile_zoom       : 100,
-    custom_colors:      raw.custom_colors ?? null,
-    labels:             raw.labels ?? null,
-  }
-
+  const design = parseDesign(card.design_options)
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
   const animClass  = getAnimClass(design.animation_type, design.animation_on)
-  const speedClass = `anim-speed-${design.animation_speed}`
+  const speedClass = 'anim-speed-' + design.animation_speed
   const btnRadius  = getBtnRadius(design.btn_radius)
   const btnH       = getBtnHeight(design.btn_size)
-  const animDelay  = design.animation_delay ? `${design.animation_delay}s` : undefined
+  const animDelay  = design.animation_delay ? design.animation_delay + 's' : undefined
 
   const cc: any = design.custom_colors
   const t: CardTheme = cc ? {
@@ -168,11 +184,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
 
   const teamBadgeBg   = cc?.team_badge_bg   ?? (t.cardBg + 'dd')
   const teamBadgeText = cc?.team_badge_text ?? t.textSub
-
-  const bgImageUrl =
-    card.company_background_url ||
-    (t.useAfgBg ? '/afg-background.png' : null) ||
-    t.customBgUrl || null
+  const bgImageUrl = card.company_background_url || (t.useAfgBg ? '/afg-background.png' : null) || t.customBgUrl || null
 
   useEffect(() => {
     const el = scrollRef.current
@@ -193,7 +205,6 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   const siteUrl = typeof window !== 'undefined' ? window.location.href : ''
   const iconSz  = design.icon_size ?? 22
   const logoH   = design.logo_height ?? 26
-
   const fz = {
     name:  design.font_size_name  ?? 28,
     sub:   design.font_size_sub   ?? 14,
@@ -203,21 +214,14 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   }
 
   const profilePosY  = design.profile_position_y ?? 15
-  const profilePosX  = design.profile_position_x ?? 50
-  const profileZoom  = design.profile_zoom ?? 100
-  const objectPos    = `${profilePosX}% ${profilePosY}%`
+  const profilePosX  = (design as any).profile_position_x ?? 50
+  const profileZoom  = (design as any).profile_zoom ?? 100
+  const objectPos    = profilePosX + '% ' + profilePosY + '%'
   const profileScale = profileZoom / 100
 
-  const isLightBg = ['#ffffff', '#faf9f7', '#f5f6f8', '#f4f4f5', '#f0ede8'].includes(t.pageBg)
-
-  // ✅ 핵심: mix-blend-mode:screen → 흰배경 PNG 네모 완전 제거
-  const logoImgStyle: React.CSSProperties = isLightBg
-    ? { display: 'block', height: logoH, width: 'auto', maxWidth: 160, objectFit: 'contain', marginBottom: 10 }
-    : { display: 'block', height: logoH, width: 'auto', maxWidth: 160, objectFit: 'contain', marginBottom: 10, mixBlendMode: 'screen' }
-
-  const footerLogoStyle: React.CSSProperties = isLightBg
-    ? { height: Math.max(logoH - 4, 18), width: 'auto', maxWidth: 90, objectFit: 'contain' }
-    : { height: Math.max(logoH - 4, 18), width: 'auto', maxWidth: 90, objectFit: 'contain', mixBlendMode: 'screen' }
+  const isLightBg      = isLightBackground(t.pageBg)
+  const logoImgStyle   = getLogoStyle(isLightBg, logoH)
+  const footerLogoStyle = getFooterLogoStyle(isLightBg, logoH)
 
   function FooterLabel({ cfgKey }: { cfgKey: string }) {
     const cfgMap: Record<string, string> = {
@@ -233,15 +237,13 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
 
   function getLinkHref(link: LinkItem): string {
     switch (link.type) {
-      case 'email':     return `mailto:${link.url}`
-      case 'phone':
-      case 'extension':
-      case 'fax':       return `tel:${link.url}`
-      case 'sms':       return `sms:${link.url}`
-      case 'kakao':     return link.url.startsWith('http') ? link.url : `https://pf.kakao.com/${link.url}`
-      case 'instagram': return link.url.startsWith('http') ? link.url : `https://instagram.com/${link.url.replace('@', '')}`
-      case 'youtube':   return link.url.startsWith('http') ? link.url : `https://youtube.com/${link.url}`
-      case 'naver':     return link.url.startsWith('http') ? link.url : `https://blog.naver.com/${link.url}`
+      case 'email':     return 'mailto:' + link.url
+      case 'phone': case 'extension': case 'fax': return 'tel:' + link.url
+      case 'sms':       return 'sms:' + link.url
+      case 'kakao':     return link.url.startsWith('http') ? link.url : 'https://pf.kakao.com/' + link.url
+      case 'instagram': return link.url.startsWith('http') ? link.url : 'https://instagram.com/' + link.url.replace('@', '')
+      case 'youtube':   return link.url.startsWith('http') ? link.url : 'https://youtube.com/' + link.url
+      case 'naver':     return link.url.startsWith('http') ? link.url : 'https://blog.naver.com/' + link.url
       default:          return ensureHttps(link.url)
     }
   }
@@ -249,49 +251,39 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   const rowStyle: React.CSSProperties = {
     fontSize: 13, color: t.textMuted, margin: 0, padding: '10px 0',
     display: 'flex', alignItems: 'flex-start',
-    borderBottom: `1px solid ${t.cardBorder}33`,
+    borderBottom: '1px solid ' + t.cardBorder + '33',
     lineHeight: 1.5, textDecoration: 'none',
   }
 
   return (
-    <div ref={scrollRef} className={`${animClass} ${speedClass}`}
+    <div ref={scrollRef} className={animClass + ' ' + speedClass}
       style={{ minHeight: '100dvh', maxWidth: 480, margin: '0 auto', background: t.pageBg, overflowY: 'auto', overflowX: 'hidden', position: 'relative', animationDelay: animDelay }}>
       <ShareButton cardUrl={siteUrl} name={card.name} />
 
-      {/* 히어로 */}
-      <div className="hero-anim"
-        style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroCollapsed ? '30vw' : '68vw', maxHeight: heroCollapsed ? '140px' : '360px', minHeight: heroCollapsed ? '90px' : '180px', transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
-
-        {/* ✅ 배경 zIndex:1 — 항상 뒤에서 살아있음 */}
+      <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroCollapsed ? '30vw' : '68vw', maxHeight: heroCollapsed ? '140px' : '360px', minHeight: heroCollapsed ? '90px' : '180px', transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
         {bgImageUrl && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: 'url(' + bgImageUrl + ')', backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
         )}
-
-        {/* ✅ 프로필 zIndex:5 — zoom + position 지원 */}
         {card.profile_image_url ? (
           <div style={{ position: 'absolute', inset: 0, zIndex: 5, overflow: 'hidden' }}>
             <img src={card.profile_image_url} alt={card.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? `scale(${profileScale})` : undefined, transformOrigin: `${profilePosX}% ${profilePosY}%` }} />
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? 'scale(' + profileScale + ')' : undefined, transformOrigin: profilePosX + '% ' + profilePosY + '%' }} />
           </div>
         ) : (
           <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 88, height: 88, borderRadius: '50%', background: t.cardBg, border: `2px solid ${t.cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: t.cardBg, border: '2px solid ' + t.cardBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
           </div>
         )}
-
-        <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ${t.pageBg}55 72%, ${t.pageBg} 100%)` }} />
-
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ' + t.pageBg + '55 72%, ' + t.pageBg + ' 100%)' }} />
         {card.team_name && (
-          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fz.team, fontWeight: 600, border: `1px solid ${t.cardBorder}` }}>
+          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fz.team, fontWeight: 600, border: '1px solid ' + t.cardBorder }}>
             {card.team_name}
           </div>
         )}
       </div>
 
-      {/* 본문 */}
       <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
         <div className="fade-up-1" style={{ marginBottom: 16 }}>
-          {/* ✅ mix-blend-mode:screen — 흰배경PNG 네모 제거 */}
           {card.company_logo_url && <img src={card.company_logo_url} alt={card.company_name} style={logoImgStyle} />}
           <h1 style={{ fontSize: fz.name, fontWeight: 700, color: t.textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{card.name}</h1>
           {card.english_name && <p style={{ fontSize: Math.max(fz.sub - 1, 10), color: t.accent, margin: '0 0 4px', fontWeight: 500 }}>{card.english_name}</p>}
@@ -301,7 +293,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         </div>
 
         {card.short_intro && (
-          <div className="fade-up-2" style={{ marginBottom: 18, paddingLeft: 12, borderLeft: `2px solid ${t.accent}44` }}>
+          <div className="fade-up-2" style={{ marginBottom: 18, paddingLeft: 12, borderLeft: '2px solid ' + t.accent + '44' }}>
             <p style={{ fontSize: fz.body + 1, color: t.textSub, lineHeight: 1.8, margin: 0 }}>{card.short_intro}</p>
           </div>
         )}
@@ -320,7 +312,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
               const Tag = active ? 'a' : 'div'
               return (
                 <Tag key={item.key} {...(active ? { href: ensureHttps(url!), target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 3px', borderRadius: 10, background: active ? t.menuActiveBg : t.menuBg, border: `1px solid ${active ? t.menuActiveBorder : t.menuBorder}`, textDecoration: 'none', cursor: active ? 'pointer' : 'default', opacity: active ? 1 : 0.4 }}>
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 3px', borderRadius: 10, background: active ? t.menuActiveBg : t.menuBg, border: '1px solid ' + (active ? t.menuActiveBorder : t.menuBorder), textDecoration: 'none', cursor: active ? 'pointer' : 'default', opacity: active ? 1 : 0.4 }}>
                   {design.show_icon && <span style={{ fontSize: iconSz }}>{item.icon}</span>}
                   {design.show_text && <span style={{ fontSize: fz.label - 1, color: t.menuText, textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>{labelMap[item.key]}</span>}
                 </Tag>
@@ -331,12 +323,12 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
 
         {card.phone && (
           <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
-            <a href={`tel:${card.phone}`} className="touch-btn"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: t.btnPrimary, color: t.btnPrimaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 700, boxShadow: `0 4px 16px ${t.accent}33` }}>
+            <a href={'tel:' + card.phone} className="touch-btn"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: t.btnPrimary, color: t.btnPrimaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 700, boxShadow: '0 4px 16px ' + t.accent + '33' }}>
               {lb.call_btn || '전화 문의하기'}
             </a>
-            <a href={`sms:${card.phone}`} className="touch-btn"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: t.btnSecondary, color: t.btnSecondaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 600, border: `1px solid ${t.btnSecondaryBorder}` }}>
+            <a href={'sms:' + card.phone} className="touch-btn"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: t.btnSecondary, color: t.btnSecondaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 600, border: '1px solid ' + t.btnSecondaryBorder }}>
               {lb.sms_btn || 'SMS 문의'}
             </a>
           </div>
@@ -348,7 +340,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
               <a key={link.id} href={getLinkHref(link)}
                 target={['email', 'phone', 'extension', 'fax', 'sms'].includes(link.type) ? '_self' : '_blank'}
                 rel="noopener noreferrer" className="touch-btn"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: btnRadius, textDecoration: 'none', color: t.textSub, fontSize: fz.body }}>
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: t.cardBg, border: '1px solid ' + t.cardBorder, borderRadius: btnRadius, textDecoration: 'none', color: t.textSub, fontSize: fz.body }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <LinkPrefix link={link} iconSz={iconSz} />
                   <span style={{ fontWeight: 500 }}>{link.label}</span>
@@ -371,10 +363,10 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
                 const Tag = news.link_url ? 'a' : 'div'
                 return (
                   <Tag key={news.id} {...(news.link_url ? { href: ensureHttps(news.link_url), target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    style={{ flexShrink: 0, width: 185, background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 13, overflow: 'hidden', textDecoration: 'none', display: 'block' }}>
+                    style={{ flexShrink: 0, width: 185, background: t.cardBg, border: '1px solid ' + t.cardBorder, borderRadius: 13, overflow: 'hidden', textDecoration: 'none', display: 'block' }}>
                     {news.image_url && <div style={{ width: '100%', height: 98, overflow: 'hidden' }}><img src={news.image_url} alt={news.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>}
                     <div style={{ padding: 10 }}>
-                      <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 700, color: cat.color, background: `${cat.color}18`, padding: '2px 7px', borderRadius: 20, marginBottom: 4 }}>{cat.label}</span>
+                      <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 700, color: cat.color, background: cat.color + '18', padding: '2px 7px', borderRadius: 20, marginBottom: 4 }}>{cat.label}</span>
                       <p style={{ fontSize: 11, fontWeight: 600, color: t.textName, lineHeight: 1.4, margin: '0 0 3px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.title}</p>
                       <p style={{ fontSize: 10, color: t.textMuted, lineHeight: 1.4, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.summary}</p>
                     </div>
@@ -385,18 +377,17 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
           </div>
         )}
 
-        {/* ✅ 하단 회사 정보 — 클릭 동작 전부 포함 */}
-        <div style={{ padding: '14px 16px', background: t.footerBg, border: `1px solid ${t.cardBorder}`, borderRadius: 16 }}>
+        <div style={{ padding: '14px 16px', background: t.footerBg, border: '1px solid ' + t.cardBorder, borderRadius: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             {card.company_logo_url
               ? <img src={card.company_logo_url} alt={card.company_name} style={footerLogoStyle} />
-              : <div style={{ width: 28, height: 28, borderRadius: 6, background: t.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${t.cardBorder}`, fontSize: 13 }}>🏢</div>
+              : <div style={{ width: 28, height: 28, borderRadius: 6, background: t.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid ' + t.cardBorder, fontSize: 13 }}>🏢</div>
             }
             <p style={{ fontSize: fz.body + 1, fontWeight: 700, color: t.textName, margin: 0 }}>{card.company_name}</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {card.address && (
-              <a href={`https://map.kakao.com/link/search/${encodeURIComponent(card.address)}`}
+              <a href={'https://map.kakao.com/link/search/' + encodeURIComponent(card.address)}
                 target="_blank" rel="noopener noreferrer" style={{ ...rowStyle, textDecoration: 'none' }}>
                 <FooterLabel cfgKey="address" />
                 <span style={{ flex: 1 }}>{card.address}</span>
@@ -404,8 +395,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
               </a>
             )}
             {card.website_url && (
-              <a href={ensureHttps(card.website_url)} target="_blank" rel="noopener noreferrer"
-                style={{ ...rowStyle, textDecoration: 'none' }}>
+              <a href={ensureHttps(card.website_url)} target="_blank" rel="noopener noreferrer" style={{ ...rowStyle, textDecoration: 'none' }}>
                 <FooterLabel cfgKey="website" />
                 <span style={{ flex: 1 }}>{card.website_url.replace(/^https?:\/\//, '')}</span>
                 <span style={{ fontSize: 11, color: t.accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>열기 ›</span>
@@ -418,7 +408,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
               </div>
             )}
             {card.email && (
-              <a href={`mailto:${card.email}`} style={{ ...rowStyle, textDecoration: 'none', borderBottom: 'none' }}>
+              <a href={'mailto:' + card.email} style={{ ...rowStyle, textDecoration: 'none', borderBottom: 'none' }}>
                 <FooterLabel cfgKey="email" />
                 <span style={{ flex: 1 }}>{card.email}</span>
                 <span style={{ fontSize: 11, color: t.accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>메일 ›</span>
