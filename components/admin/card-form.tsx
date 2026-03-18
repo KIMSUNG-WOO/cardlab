@@ -1,7 +1,7 @@
 'use client'
 
 import { parseDesign, getLogoStyle, getFooterLogoStyle, isLightBackground } from '@/components/templates/card-base'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { TEMPLATE_LIST, DEFAULT_TEMPLATE, TEMPLATES } from '@/lib/templates'
@@ -189,9 +189,22 @@ function LabelCfgEditor({ label, value, onChange, cardSlug }: {
   )
 }
 
-function LivePreview({ f, extraLinks, design, companies, newsItems }: {
+// 애니메이션 클래스 매핑 (card-base.tsx의 getAnimClass와 동일)
+function getPreviewAnimClass(type: AnimationType, on: boolean): string {
+  if (!on) return 'anim-none'
+  const map: Record<AnimationType, string> = {
+    'zoom-out': 'anim-zoom-out', 'fade-in': 'anim-fade-in',
+    'slide-up': 'anim-slide-up', 'blur-reveal': 'anim-blur-reveal',
+    'cinematic': 'anim-cinematic', 'photo-first': 'anim-photo-first',
+    'text-first': 'anim-text-first', 'simultaneous': 'anim-simultaneous',
+    'minimal': 'anim-minimal', 'bounce': 'anim-bounce', 'none': 'anim-none',
+  }
+  return map[type] ?? 'anim-zoom-out'
+}
+
+function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
   f: any; extraLinks: LinkItem[]; design: CardDesignOptions
-  companies: Company[]; newsItems: any[]
+  companies: Company[]; newsItems: any[]; animKey: number
 }) {
   const tpl = TEMPLATE_LIST.find(t => t.key === f.template_key)
   const isLight = ['afg-light', 'clean-white', 'warm-white'].includes(f.template_key)
@@ -234,10 +247,14 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
   const logoImgStyle    = getLogoStyle(isLightBg, logoH)
   const footerLogoStyle = getFooterLogoStyle(isLightBg, logoH)
 
-  // card-base.tsx와 동일한 hasBackground 로직
   const hasBackground = !!bgImageUrl
   const profileLeft   = hasBackground ? '30%' : '0'
   const profileWidth  = hasBackground ? '70%' : '100%'
+
+  // 실제 명함과 동일한 애니메이션 클래스 + 속도 클래스
+  const animClass  = getPreviewAnimClass(design.animation_type, design.animation_on)
+  const speedClass = 'anim-speed-' + design.animation_speed
+  const animDelay  = design.animation_delay ? design.animation_delay + 's' : undefined
 
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
 
@@ -268,16 +285,19 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
         <p style={{ fontSize: 10, color: '#9ca3af', margin: 0 }}>실제 명함과 동일</p>
       </div>
 
-      <div style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh', overflowY: 'auto' }}>
+      {/* animKey가 바뀔 때마다 재마운트 → 애니메이션 재실행 */}
+      <div
+        key={animKey}
+        className={`${animClass} ${speedClass}`}
+        style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh', overflowY: 'auto', animationDelay: animDelay }}
+      >
 
-        <div style={{ position: 'relative', width: '100%', overflow: 'hidden', height: '68vw', maxHeight: 360, minHeight: 180, background: pageBg }}>
+        <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: '68vw', maxHeight: 360, minHeight: 180, background: pageBg }}>
 
-          {/* zIndex 1: 배경 이미지 */}
           {bgImageUrl && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
           )}
 
-          {/* zIndex 2: 브랜드 로고 (배경 있을 때만, 좌하단) */}
           {hasBackground && logoUrl && (
             <div style={{ position: 'absolute', bottom: 14, left: 14, zIndex: 2, pointerEvents: 'none' }}>
               <img
@@ -296,7 +316,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
-          {/* zIndex 5: 프로필 — 배경 있으면 우측 70%, 없으면 전체 */}
           {f.profile_image_url ? (
             <div style={{
               position: 'absolute',
@@ -309,7 +328,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
               <img src={f.profile_image_url} alt=""
                 style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? `scale(${profileScale})` : undefined, transformOrigin: `${profileX}% ${profileY}%` }}
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              {/* 좌측 페이드 — 배경과 자연스럽게 겹치게 */}
               {hasBackground && (
                 <div style={{
                   position: 'absolute',
@@ -326,10 +344,8 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
-          {/* zIndex 10: 그라디언트 */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ${pageBg}55 72%, ${pageBg} 100%)` }} />
 
-          {/* zIndex 20: 팀 뱃지 */}
           {f.team_name && (
             <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fzTeam, fontWeight: 600, border: `1px solid ${border}` }}>
               {f.team_name}
@@ -339,7 +355,7 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
 
         <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
 
-          <div style={{ marginBottom: 16 }}>
+          <div className="fade-up-1" style={{ marginBottom: 16 }}>
             {logoUrl && (
               <img src={logoUrl} alt="" style={logoImgStyle}
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
@@ -350,12 +366,12 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
           </div>
 
           {f.short_intro && (
-            <div style={{ marginBottom: 18, paddingLeft: 12, borderLeft: `2px solid ${accent}44` }}>
+            <div className="fade-up-2" style={{ marginBottom: 18, paddingLeft: 12, borderLeft: `2px solid ${accent}44` }}>
               <p style={{ fontSize: fzBody + 1, color: textSub, lineHeight: 1.8, margin: 0 }}>{f.short_intro}</p>
             </div>
           )}
 
-          <div style={{ marginBottom: 16 }}>
+          <div className="fade-up-3" style={{ marginBottom: 16 }}>
             {lb.menu_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 9 }}>{lb.menu_section}</p>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
               {[
@@ -376,29 +392,33 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
           </div>
 
           {f.phone && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
+            <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: btnColor, color: '#fff', borderRadius: btnR, fontSize: fzBody, fontWeight: 700 }}>{lb.call_btn || '전화 문의하기'}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, fontSize: fzBody, color: textSub, fontWeight: 600 }}>{lb.sms_btn || 'SMS 문의'}</div>
             </div>
           )}
 
-          {extraLinks.filter(l => l.url).map(link => (
-            <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 6, color: textSub, fontSize: fzBody }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {link.prefixType === 'emoji' && link.prefixEmoji && <span style={{ fontSize: iconSz }}>{link.prefixEmoji}</span>}
-                {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto', objectFit: 'contain' }} />}
-                {link.prefixType === 'text' && link.prefixText && <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.7, whiteSpace: 'nowrap' }}>{link.prefixText}</span>}
-                <span style={{ fontWeight: 500 }}>{link.label}</span>
-                {(link.type === 'fax' || link.type === 'extension') && link.url && (
-                  <span style={{ fontSize: fzBody - 1, color: textMuted }}>{link.url}</span>
-                )}
-              </span>
-              <span style={{ color: textMuted, fontSize: 16, flexShrink: 0 }}>›</span>
+          {extraLinks.filter(l => l.url).length > 0 && (
+            <div className="fade-up-5" style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
+              {extraLinks.filter(l => l.url).map(link => (
+                <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 0, color: textSub, fontSize: fzBody }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {link.prefixType === 'emoji' && link.prefixEmoji && <span style={{ fontSize: iconSz }}>{link.prefixEmoji}</span>}
+                    {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto', objectFit: 'contain' }} />}
+                    {link.prefixType === 'text' && link.prefixText && <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.7, whiteSpace: 'nowrap' }}>{link.prefixText}</span>}
+                    <span style={{ fontWeight: 500 }}>{link.label}</span>
+                    {(link.type === 'fax' || link.type === 'extension') && link.url && (
+                      <span style={{ fontSize: fzBody - 1, color: textMuted }}>{link.url}</span>
+                    )}
+                  </span>
+                  <span style={{ color: textMuted, fontSize: 16, flexShrink: 0 }}>›</span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
 
           {newsItems.filter((n: any) => n.title?.trim()).length > 0 && (
-            <div style={{ marginBottom: 20 }}>
+            <div className="fade-up-6" style={{ marginBottom: 20 }}>
               {lb.news_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 11 }}>{lb.news_section}</p>}
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
                 {newsItems.filter((n: any) => n.title?.trim()).slice(0, 3).map((news: any, i: number) => (
@@ -476,6 +496,8 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   const [error,  setError]        = useState('')
   const [activeTab, setActiveTab] = useState<'basic' | 'links' | 'design' | 'anim' | 'labels' | 'news'>('basic')
   const [showLinkPicker, setShowLinkPicker] = useState(false)
+  // animKey: 애니메이션 설정이 바뀔 때마다 증가 → LivePreview 재마운트 → 애니메이션 재실행
+  const [animKey, setAnimKey] = useState(0)
 
   const [f, setF] = useState({
     slug:                     card?.slug ?? '',
@@ -550,6 +572,31 @@ export function CardForm({ mode, card, companies = [] }: Props) {
       category: n.category, sort_order: n.sort_order, is_visible: n.is_visible,
     }))
   )
+
+  // 애니메이션 관련 설정이 바뀌면 animKey 증가 → 미리보기 재마운트
+  const prevAnimRef = useRef({
+    type: design.animation_type,
+    speed: design.animation_speed,
+    on: design.animation_on,
+    delay: design.animation_delay,
+  })
+  useEffect(() => {
+    const prev = prevAnimRef.current
+    if (
+      prev.type  !== design.animation_type  ||
+      prev.speed !== design.animation_speed ||
+      prev.on    !== design.animation_on    ||
+      prev.delay !== design.animation_delay
+    ) {
+      prevAnimRef.current = {
+        type:  design.animation_type,
+        speed: design.animation_speed,
+        on:    design.animation_on,
+        delay: design.animation_delay,
+      }
+      setAnimKey(k => k + 1)
+    }
+  }, [design.animation_type, design.animation_speed, design.animation_on, design.animation_delay])
 
   const set    = (k: keyof typeof f) => (v: any) => setF(p => ({ ...p, [k]: v }))
   const setDes = (k: keyof CardDesignOptions) => (v: any) => setDesign(p => ({ ...p, [k]: v }))
@@ -1093,7 +1140,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
       </div>
 
       <div style={{ position: 'sticky', top: 20, alignSelf: 'start' }}>
-        <LivePreview f={f} extraLinks={extraLinks} design={design} companies={companies} newsItems={newsItems} />
+        <LivePreview f={f} extraLinks={extraLinks} design={design} companies={companies} newsItems={newsItems} animKey={animKey} />
       </div>
     </div>
   )
