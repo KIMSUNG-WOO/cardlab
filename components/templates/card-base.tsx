@@ -112,9 +112,9 @@ function ShareButton({ cardUrl, name, profileImageUrl, description, position, co
         link: { mobileWebUrl: cardUrl, webUrl: cardUrl },
       },
       social: {
-        likeCount: 17452,
-        commentCount: 13201,
-        sharedCount: 14839,
+        likeCount: 12563,
+        commentCount: 7201,
+        sharedCount: 10839,
       },
       buttons: [
         { title: '모바일 명함 보기', link: { mobileWebUrl: cardUrl, webUrl: cardUrl } },
