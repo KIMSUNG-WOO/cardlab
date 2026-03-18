@@ -4,13 +4,13 @@ import { parseDesign, getLogoStyle, getFooterLogoStyle, isLightBackground } from
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { TEMPLATE_LIST, DEFAULT_TEMPLATE, TEMPLATES } from '@/lib/templates'
+import { TEMPLATE_LIST, DEFAULT_TEMPLATE, TEMPLATES, TEMPLATE_GROUPS } from '@/lib/templates'
 import { isValidSlug, nullToEmpty, generateId } from '@/lib/utils'
 import type {
   BusinessCard, TemplateKey, LinkItem, LinkType,
   CardNews, AnimationType, CardDesignOptions,
   CustomColors, AllLabels, LabelPrefixType,
-  LabelConfig, LabelMode
+  LabelConfig, LabelMode, DesignStyle, FontStyle, BgStyle, InfoLayout
 } from '@/lib/types'
 import {
   DEFAULT_DESIGN_OPTIONS, DEFAULT_LABELS,
@@ -60,6 +60,34 @@ const NEWS_CATS = [
   { value: 'insurance', label: '보험' }, { value: 'finance', label: '금융' },
   { value: 'policy', label: '정책변경' }, { value: 'news', label: '뉴스' },
   { value: 'notice', label: '공지' },
+]
+
+const DESIGN_STYLE_OPTIONS: { value: DesignStyle; label: string; desc: string; icon: string }[] = [
+  { value: 'card',         label: '카드형',       desc: '명함 카드 스타일',     icon: '🃏' },
+  { value: 'minimal',      label: '미니멀형',     desc: '여백 중심',            icon: '◻️' },
+  { value: 'premium',      label: '프리미엄형',   desc: '고급스러운 연출',      icon: '✨' },
+  { value: 'text-focus',   label: '텍스트 중심',  desc: '정보/텍스트 강조',     icon: '📝' },
+  { value: 'visual-focus', label: '비주얼 중심',  desc: '사진/이미지 강조',     icon: '🖼️' },
+]
+
+const FONT_STYLE_OPTIONS: { value: FontStyle; label: string; desc: string }[] = [
+  { value: 'default', label: '기본 (Pretendard)', desc: '모던 산세리프' },
+  { value: 'serif',   label: '명조체',            desc: '클래식하고 격조 있는' },
+  { value: 'bold',    label: '볼드',              desc: '강조감 있는 굵은 체' },
+  { value: 'light',   label: '라이트',            desc: '얇고 세련된 느낌' },
+]
+
+const BG_STYLE_OPTIONS: { value: BgStyle; label: string; desc: string; icon: string }[] = [
+  { value: 'solid',       label: '단색',        desc: '깔끔한 단색 배경',    icon: '⬛' },
+  { value: 'gradient',    label: '그라디언트',  desc: '부드러운 색상 전환',  icon: '🌈' },
+  { value: 'blur',        label: '블러',        desc: '배경 블러 효과',      icon: '🌫️' },
+  { value: 'image-blend', label: '이미지 혼합', desc: '배경 이미지와 혼합',  icon: '🖼️' },
+]
+
+const INFO_LAYOUT_OPTIONS: { value: InfoLayout; label: string; desc: string; icon: string }[] = [
+  { value: 'standard',  label: '기본',   desc: '일반적인 정보 배치',    icon: '📋' },
+  { value: 'compact',   label: '컴팩트', desc: '간결하게 압축',         icon: '📦' },
+  { value: 'expanded',  label: '확장',   desc: '넓고 여유 있게',        icon: '📰' },
 ]
 
 const I: React.CSSProperties = {
@@ -189,7 +217,6 @@ function LabelCfgEditor({ label, value, onChange, cardSlug }: {
   )
 }
 
-// 애니메이션 클래스 매핑 (card-base.tsx의 getAnimClass와 동일)
 function getPreviewAnimClass(type: AnimationType, on: boolean): string {
   if (!on) return 'anim-none'
   const map: Record<AnimationType, string> = {
@@ -207,7 +234,7 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
   companies: Company[]; newsItems: any[]; animKey: number
 }) {
   const tpl = TEMPLATE_LIST.find(t => t.key === f.template_key)
-  const isLight = ['afg-light', 'clean-white', 'warm-white'].includes(f.template_key)
+  const isLight = ['afg-light', 'clean-white', 'warm-white', 'minimal-type', 'text-focus'].includes(f.template_key)
 
   const cc = design.custom_colors as any
   const pageBg    = cc?.page_bg    || tpl?.preview   || '#0a0a0a'
@@ -251,7 +278,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
   const profileLeft   = hasBackground ? '30%' : '0'
   const profileWidth  = hasBackground ? '70%' : '100%'
 
-  // 실제 명함과 동일한 애니메이션 클래스 + 속도 클래스
   const animClass  = getPreviewAnimClass(design.animation_type, design.animation_on)
   const speedClass = 'anim-speed-' + design.animation_speed
   const animDelay  = design.animation_delay ? design.animation_delay + 's' : undefined
@@ -285,57 +311,28 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
         <p style={{ fontSize: 10, color: '#9ca3af', margin: 0 }}>실제 명함과 동일</p>
       </div>
 
-      {/* animKey가 바뀔 때마다 재마운트 → 애니메이션 재실행 */}
       <div
         key={animKey}
         className={`${animClass} ${speedClass}`}
         style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh', overflowY: 'auto', animationDelay: animDelay }}
       >
-
         <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: '68vw', maxHeight: 360, minHeight: 180, background: pageBg }}>
-
           {bgImageUrl && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
           )}
-
           {hasBackground && logoUrl && (
             <div style={{ position: 'absolute', bottom: 14, left: 14, zIndex: 2, pointerEvents: 'none' }}>
-              <img
-                src={logoUrl}
-                alt=""
-                style={{
-                  height: logoH,
-                  width: 'auto',
-                  maxWidth: 120,
-                  objectFit: 'contain',
-                  opacity: 0.9,
-                  mixBlendMode: isLightBg ? 'normal' : 'screen',
-                }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
+              <img src={logoUrl} alt="" style={{ height: logoH, width: 'auto', maxWidth: 120, objectFit: 'contain', opacity: 0.9, mixBlendMode: isLightBg ? 'normal' : 'screen' }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
             </div>
           )}
-
           {f.profile_image_url ? (
-            <div style={{
-              position: 'absolute',
-              top: 0, bottom: 0,
-              left: profileLeft,
-              width: profileWidth,
-              zIndex: 5,
-              overflow: 'hidden',
-            }}>
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: profileLeft, width: profileWidth, zIndex: 5, overflow: 'hidden' }}>
               <img src={f.profile_image_url} alt=""
                 style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? `scale(${profileScale})` : undefined, transformOrigin: `${profileX}% ${profileY}%` }}
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
               {hasBackground && (
-                <div style={{
-                  position: 'absolute',
-                  top: 0, bottom: 0, left: 0,
-                  width: '40%',
-                  background: `linear-gradient(to right, ${pageBg}cc, transparent)`,
-                  pointerEvents: 'none',
-                }} />
+                <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '40%', background: `linear-gradient(to right, ${pageBg}cc, transparent)`, pointerEvents: 'none' }} />
               )}
             </div>
           ) : (
@@ -343,9 +340,7 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
               <div style={{ width: 88, height: 88, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
             </div>
           )}
-
           <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ${pageBg}55 72%, ${pageBg} 100%)` }} />
-
           {f.team_name && (
             <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fzTeam, fontWeight: 600, border: `1px solid ${border}` }}>
               {f.team_name}
@@ -354,7 +349,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
         </div>
 
         <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
-
           <div className="fade-up-1" style={{ marginBottom: 16 }}>
             {logoUrl && (
               <img src={logoUrl} alt="" style={logoImgStyle}
@@ -364,13 +358,11 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
             {f.english_name && <p style={{ fontSize: Math.max(fzSub - 1, 10), color: accent, margin: '0 0 4px', fontWeight: 500 }}>{f.english_name}</p>}
             {f.position && <p style={{ fontSize: fzSub, color: textSub, lineHeight: 1.5, margin: 0 }}>{f.position}{f.company_name && <span style={{ color: textMuted }}> · {f.company_name}</span>}</p>}
           </div>
-
           {f.short_intro && (
             <div className="fade-up-2" style={{ marginBottom: 18, paddingLeft: 12, borderLeft: `2px solid ${accent}44` }}>
               <p style={{ fontSize: fzBody + 1, color: textSub, lineHeight: 1.8, margin: 0 }}>{f.short_intro}</p>
             </div>
           )}
-
           <div className="fade-up-3" style={{ marginBottom: 16 }}>
             {lb.menu_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 9 }}>{lb.menu_section}</p>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
@@ -390,18 +382,16 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
               })}
             </div>
           </div>
-
           {f.phone && (
             <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: btnColor, color: '#fff', borderRadius: btnR, fontSize: fzBody, fontWeight: 700 }}>{lb.call_btn || '전화 문의하기'}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, fontSize: fzBody, color: textSub, fontWeight: 600 }}>{lb.sms_btn || 'SMS 문의'}</div>
             </div>
           )}
-
           {extraLinks.filter(l => l.url).length > 0 && (
             <div className="fade-up-5" style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
               {extraLinks.filter(l => l.url).map(link => (
-                <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 0, color: textSub, fontSize: fzBody }}>
+                <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, color: textSub, fontSize: fzBody }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {link.prefixType === 'emoji' && link.prefixEmoji && <span style={{ fontSize: iconSz }}>{link.prefixEmoji}</span>}
                     {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto', objectFit: 'contain' }} />}
@@ -416,7 +406,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
               ))}
             </div>
           )}
-
           {newsItems.filter((n: any) => n.title?.trim()).length > 0 && (
             <div className="fade-up-6" style={{ marginBottom: 20 }}>
               {lb.news_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 11 }}>{lb.news_section}</p>}
@@ -433,7 +422,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
               </div>
             </div>
           )}
-
           <div style={{ padding: '14px 16px', background: footerBg, border: `1px solid ${border}`, borderRadius: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               {logoUrl
@@ -496,8 +484,8 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   const [error,  setError]        = useState('')
   const [activeTab, setActiveTab] = useState<'basic' | 'links' | 'design' | 'anim' | 'labels' | 'news'>('basic')
   const [showLinkPicker, setShowLinkPicker] = useState(false)
-  // animKey: 애니메이션 설정이 바뀔 때마다 증가 → LivePreview 재마운트 → 애니메이션 재실행
   const [animKey, setAnimKey] = useState(0)
+  const [tplGroupIdx, setTplGroupIdx] = useState(0)
 
   const [f, setF] = useState({
     slug:                     card?.slug ?? '',
@@ -560,6 +548,10 @@ export function CardForm({ mode, card, companies = [] }: Props) {
         team_badge_text: raw.custom_colors.team_badge_text ?? undefined,
       } : null,
       labels,
+      design_style: raw.design_style ?? 'card',
+      font_style:   raw.font_style   ?? 'default',
+      bg_style:     raw.bg_style     ?? 'solid',
+      info_layout:  raw.info_layout  ?? 'standard',
     }
   }
 
@@ -573,7 +565,6 @@ export function CardForm({ mode, card, companies = [] }: Props) {
     }))
   )
 
-  // 애니메이션 관련 설정이 바뀌면 animKey 증가 → 미리보기 재마운트
   const prevAnimRef = useRef({
     type: design.animation_type,
     speed: design.animation_speed,
@@ -851,17 +842,96 @@ export function CardForm({ mode, card, companies = [] }: Props) {
 
         {activeTab === 'design' && (
           <div className="admin-card">
+
+            {/* ── A. 템플릿 선택 (그룹 탭으로 스크롤 단축) ── */}
             <SectionHeader>템플릿</SectionHeader>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-              {TEMPLATE_LIST.map(t => (
-                <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', background: f.template_key === t.key ? '#e7f0ff' : '#f8f9fa', border: `1.5px solid ${f.template_key === t.key ? '#4263eb' : '#e9ecef'}`, borderRadius: 12, cursor: 'pointer' }}>
-                  <input type="radio" name="template" value={t.key} checked={f.template_key === t.key} onChange={() => set('template_key')(t.key as TemplateKey)} style={{ accentColor: '#4263eb', width: 16, height: 16 }} />
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: t.previewGradient ?? t.preview, border: '2px solid #dee2e6', flexShrink: 0 }} />
-                  <div><p style={{ fontSize: 13, fontWeight: 700, color: '#212529', margin: 0 }}>{t.label}</p><p style={{ fontSize: 11, color: '#868e96', margin: '2px 0 0' }}>{t.description}</p></div>
-                  {f.template_key === t.key && <span style={{ marginLeft: 'auto', color: '#4263eb', fontSize: 16 }}>✓</span>}
-                </label>
+            <div style={{ display: 'flex', gap: 4, background: '#f8f9fa', padding: 3, borderRadius: 10, marginBottom: 12, overflow: 'auto' }}>
+              {TEMPLATE_GROUPS.map((g, i) => (
+                <button key={i} type="button" onClick={() => setTplGroupIdx(i)}
+                  style={{ padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: tplGroupIdx === i ? 700 : 500, color: tplGroupIdx === i ? '#4263eb' : '#868e96', background: tplGroupIdx === i ? '#e7f0ff' : 'transparent', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {g.label}
+                </button>
               ))}
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+              {TEMPLATE_GROUPS[tplGroupIdx].keys.map(key => {
+                const t = TEMPLATES[key]
+                return (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: f.template_key === key ? '#e7f0ff' : '#f8f9fa', border: `1.5px solid ${f.template_key === key ? '#4263eb' : '#e9ecef'}`, borderRadius: 10, cursor: 'pointer' }}>
+                    <input type="radio" name="template" value={key} checked={f.template_key === key} onChange={() => set('template_key')(key)} style={{ accentColor: '#4263eb', width: 15, height: 15 }} />
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: t.previewGradient ?? t.preview, border: '2px solid #dee2e6', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: '#212529', margin: 0 }}>{t.label}</p>
+                      <p style={{ fontSize: 10, color: '#868e96', margin: '1px 0 0' }}>{t.description}</p>
+                    </div>
+                    {(t as any).styleTag && <span style={{ fontSize: 9, background: '#4263eb18', color: '#4263eb', padding: '2px 7px', borderRadius: 20, fontWeight: 700, flexShrink: 0 }}>{(t as any).styleTag}</span>}
+                    {f.template_key === key && <span style={{ color: '#4263eb', fontSize: 14 }}>✓</span>}
+                  </label>
+                )
+              })}
+            </div>
+
+            {/* ── B. 스타일 프리셋 ── */}
+            <SectionHeader>스타일 프리셋</SectionHeader>
+
+            {/* B1. 디자인 스타일 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>카드 스타일</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6 }}>
+                {DESIGN_STYLE_OPTIONS.map(opt => (
+                  <button key={opt.value} type="button" onClick={() => setDes('design_style')(opt.value)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', border: `1.5px solid ${(design as any).design_style === opt.value ? '#4263eb' : '#e9ecef'}`, background: (design as any).design_style === opt.value ? '#e7f0ff' : '#f8f9fa', borderRadius: 9, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: (design as any).design_style === opt.value ? '#4263eb' : '#495057', textAlign: 'center', lineHeight: 1.3 }}>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* B2. 폰트 스타일 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>폰트 스타일</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                {FONT_STYLE_OPTIONS.map(opt => (
+                  <button key={opt.value} type="button" onClick={() => setDes('font_style')(opt.value)}
+                    style={{ padding: '8px 4px', border: `1.5px solid ${(design as any).font_style === opt.value ? '#4263eb' : '#e9ecef'}`, background: (design as any).font_style === opt.value ? '#e7f0ff' : '#f8f9fa', borderRadius: 9, cursor: 'pointer', textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: (design as any).font_style === opt.value ? '#4263eb' : '#212529', margin: 0 }}>{opt.label}</p>
+                    <p style={{ fontSize: 9, color: '#868e96', margin: '2px 0 0' }}>{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* B3. 배경 스타일 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>배경 스타일</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                {BG_STYLE_OPTIONS.map(opt => (
+                  <button key={opt.value} type="button" onClick={() => setDes('bg_style')(opt.value)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', border: `1.5px solid ${(design as any).bg_style === opt.value ? '#4263eb' : '#e9ecef'}`, background: (design as any).bg_style === opt.value ? '#e7f0ff' : '#f8f9fa', borderRadius: 9, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 16 }}>{opt.icon}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: (design as any).bg_style === opt.value ? '#4263eb' : '#495057', textAlign: 'center', lineHeight: 1.3 }}>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* B4. 정보 배치 */}
+            <div style={{ marginBottom: 4 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>정보 배치 스타일</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+                {INFO_LAYOUT_OPTIONS.map(opt => (
+                  <button key={opt.value} type="button" onClick={() => setDes('info_layout')(opt.value)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 4px', border: `1.5px solid ${(design as any).info_layout === opt.value ? '#4263eb' : '#e9ecef'}`, background: (design as any).info_layout === opt.value ? '#e7f0ff' : '#f8f9fa', borderRadius: 9, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: (design as any).info_layout === opt.value ? '#4263eb' : '#212529' }}>{opt.label}</span>
+                    <span style={{ fontSize: 9, color: '#868e96', textAlign: 'center' }}>{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── C. 색상 커스터마이징 ── */}
             <SectionHeader>색상 커스터마이징</SectionHeader>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
               <input type="checkbox" checked={!!design.custom_colors}
@@ -937,6 +1007,8 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                 </div>
               </>
             )}
+
+            {/* ── D. 버튼 스타일 ── */}
             <SectionHeader>버튼 스타일</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
@@ -948,10 +1020,12 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>버튼 크기</label>
                 <select className="admin-input" style={I} value={design.btn_size} onChange={e => setDes('btn_size')(e.target.value)}>
-                  {[['sm', '작게(44px)'], ['md', '보통(52px)'], ['lg', '크게(58px)']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  {[['sm', '작게(40px)'], ['md', '보통(46px)'], ['lg', '크게(52px)']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
             </div>
+
+            {/* ── E. 글씨 크기 ── */}
             <SectionHeader>글씨 크기 (0~100px)</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <NumInput label="이름" value={design.font_size_name} recommend={28} unit="px" onChange={v => setDes('font_size_name')(v)} />
@@ -959,8 +1033,12 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               <NumInput label="본문" value={design.font_size_body} recommend={13} unit="px" onChange={v => setDes('font_size_body')(v)} />
               <NumInput label="팀·브랜치명" value={design.font_size_team} recommend={11} unit="px" onChange={v => setDes('font_size_team')(v)} />
             </div>
+
+            {/* ── F. 로고 크기 ── */}
             <SectionHeader>로고 크기 (0~100px)</SectionHeader>
             <NumInput label="회사 로고 높이" value={design.logo_height ?? 26} recommend={26} unit="px" onChange={v => setDes('logo_height')(v)} />
+
+            {/* ── G. 프로필 사진 편집 ── */}
             <SectionHeader>📸 프로필 사진 편집</SectionHeader>
             <div style={{ background: '#f0f4ff', border: '1px solid #c5d7ff', borderRadius: 12, padding: '14px 16px', marginBottom: 4 }}>
               <div style={{ marginBottom: 14 }}>
@@ -1001,6 +1079,8 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               </div>
               <p style={{ fontSize: 11, color: '#6b7280', margin: '10px 0 0' }}>💡 오른쪽 미리보기에서 실시간 확인</p>
             </div>
+
+            {/* ── H. 아이콘 설정 ── */}
             <SectionHeader>아이콘 설정</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#495057' }}>

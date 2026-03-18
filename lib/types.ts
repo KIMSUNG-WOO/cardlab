@@ -1,6 +1,8 @@
 export type TemplateKey =
   | 'afg-dark' | 'afg-light' | 'modern-gray' | 'navy-pro'
   | 'clean-white' | 'premium-black' | 'slate-pro' | 'warm-white'
+  | 'card-type' | 'minimal-type' | 'premium-type' | 'text-focus'
+  | 'visual-focus' | 'ceo-type' | 'consultant-type' | 'finance-expert'
 
 export type AnimationType =
   | 'zoom-out' | 'fade-in' | 'slide-up' | 'blur-reveal'
@@ -14,6 +16,11 @@ export type LinkType =
   | 'extension' | 'fax' | 'custom'
 
 export type LabelPrefixType = 'none' | 'emoji' | 'text' | 'image'
+
+export type DesignStyle = 'card' | 'minimal' | 'premium' | 'text-focus' | 'visual-focus'
+export type FontStyle = 'default' | 'serif' | 'bold' | 'light'
+export type BgStyle = 'solid' | 'gradient' | 'blur' | 'image-blend'
+export type InfoLayout = 'standard' | 'compact' | 'expanded'
 
 export interface LinkItem {
   id: string
@@ -44,8 +51,8 @@ export interface Company {
 export interface CustomColors {
   page_bg: string; card_bg: string; btn_color: string
   name_color: string; desc_color: string; accent: string
-  team_badge_bg?: string   // v7: 팀명 뱃지 배경색
-  team_badge_text?: string // v7: 팀명 뱃지 글씨색
+  team_badge_bg?: string
+  team_badge_text?: string
 }
 
 export type LabelMode = 'emoji' | 'image' | 'text' | 'none'
@@ -61,34 +68,25 @@ export interface LabelConfig {
 }
 
 export interface AllLabels {
-  // 연락처 라벨 (LabelConfig 방식)
   phone_cfg?: LabelConfig
   email_cfg?: LabelConfig
   address_cfg?: LabelConfig
   website_cfg?: LabelConfig
   extension_cfg?: LabelConfig
   fax_cfg?: LabelConfig
-
-  // 기존 호환용 단순 텍스트
   phone?: string
   email?: string
   address?: string
   website?: string
   extension?: string
   fax?: string
-
-  // 섹션 제목
   menu_section?: string
   news_section?: string
-
-  // 버튼 텍스트 전체
   call_btn?: string
   sms_btn?: string
   kakao_btn?: string
   consult_btn?: string
   email_btn?: string
-
-  // 메뉴 항목 이름 (보험금청구 등)
   menu_insurance?: string
   menu_check?: string
   menu_analysis?: string
@@ -100,28 +98,25 @@ export interface CardDesignOptions {
   animation_speed: 'slow' | 'normal' | 'fast'
   animation_delay: number
   animation_on: boolean
-
   show_icon: boolean
   show_text: boolean
-  icon_size: number          // 0~100 (기본 22)
-
-  // 글씨 크기 (0~100)
-  font_size_name: number     // 기본 28
-  font_size_sub: number      // 기본 14
-  font_size_body: number     // 기본 13
-  font_size_team: number     // 기본 11
-
-  // v7: 로고 크기 (0~100, 기본 26)
+  icon_size: number
+  font_size_name: number
+  font_size_sub: number
+  font_size_body: number
+  font_size_team: number
   logo_height: number
-
   btn_radius: 'none' | 'sm' | 'md' | 'lg' | 'full'
   btn_size: 'sm' | 'md' | 'lg'
-
   profile_position_y?: number
-  profile_position_x?: number   // 좌우 위치 0~100 (기본 50)
-  profile_zoom?: number         // 확대/축소 100~200 (기본 100)
+  profile_position_x?: number
+  profile_zoom?: number
   custom_colors?: CustomColors | null
   labels?: AllLabels | null
+  design_style?: DesignStyle
+  font_style?: FontStyle
+  bg_style?: BgStyle
+  info_layout?: InfoLayout
 }
 
 export interface BusinessCard {
@@ -160,6 +155,10 @@ export const DEFAULT_DESIGN_OPTIONS: CardDesignOptions = {
   custom_colors: null, labels: null,
   profile_position_x: 50,
   profile_zoom: 100,
+  design_style: 'card',
+  font_style: 'default',
+  bg_style: 'solid',
+  info_layout: 'standard',
 }
 
 export const DEFAULT_LABELS: AllLabels = {
@@ -185,7 +184,6 @@ export const DEFAULT_LABEL_EMOJIS: { key: string; label: string; emoji: string }
   { key: 'none',    label: '없음',     emoji: '' },
 ]
 
-// 색상 추천 시스템 v7
 export interface ColorSuggestion {
   label: string
   colors: { name: string; value: string }[]
