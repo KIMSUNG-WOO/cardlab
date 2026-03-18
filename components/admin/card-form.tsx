@@ -13,14 +13,13 @@ import type {
 } from '@/lib/types'
 import {
   DEFAULT_DESIGN_OPTIONS, DEFAULT_LABELS,
-  DEFAULT_LABEL_EMOJIS
+  DEFAULT_LABEL_EMOJIS, COLOR_COMBOS
 } from '@/lib/types'
 import { ImageUploader } from './image-uploader'
 
 interface Company {
   id: string; name: string
-  logo_url: string | null
-  background_url: string | null
+  logo_url: string | null; background_url: string | null
 }
 interface Props {
   mode: 'create' | 'edit'
@@ -28,7 +27,7 @@ interface Props {
   companies?: Company[]
 }
 
-// ── 상수 ──────────────────────────────────────────────────
+// ── 상수 ──────────────────────────────────────────────────────
 const LINK_OPTIONS: { type: LinkType; label: string; emoji: string }[] = [
   { type: 'kakao',     label: '카카오 채널', emoji: '💛' },
   { type: 'instagram', label: '인스타그램',  emoji: '📸' },
@@ -63,21 +62,7 @@ const NEWS_CATS = [
   { value: 'notice', label: '공지' },
 ]
 
-const COLOR_TIPS: Record<string, string> = {
-  '#000000': '흰색, 골드와 잘 어울립니다',
-  '#ffffff': '블랙, 딥블루와 잘 어울립니다',
-  '#0a0a0a': '슬레이트블루, 흰색과 잘 어울립니다',
-  '#1e40af': '흰색, 스카이블루와 잘 어울립니다',
-}
-function getColorTip(c: string) { return COLOR_TIPS[c.toLowerCase()] ?? '' }
-
-const FONT_FAMILIES = [
-  { value: 'pretendard', label: 'Pretendard (기본)' },
-  { value: 'serif', label: '명조체' },
-  { value: 'mono', label: '고정폭' },
-]
-
-// ── 공통 스타일 ───────────────────────────────────────────
+// ── 공통 스타일 ───────────────────────────────────────────────
 const I: React.CSSProperties = {
   width: '100%', padding: '10px 14px', background: '#fff',
   border: '1.5px solid #dee2e6', borderRadius: 8,
@@ -109,8 +94,9 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   )
 }
 
-function NumInput({ label, value, min, max, step = 1, unit, onChange, recommend }: {
-  label: string; value: number; min: number; max: number
+// ── NumInput: 범위 0~100, 제한 없음 ──────────────────────────
+function NumInput({ label, value, min = 0, max = 100, step = 1, unit, onChange, recommend }: {
+  label: string; value: number; min?: number; max?: number
   step?: number; unit?: string; onChange: (v: number) => void; recommend?: number
 }) {
   return (
@@ -121,7 +107,8 @@ function NumInput({ label, value, min, max, step = 1, unit, onChange, recommend 
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <button type="button" onClick={() => onChange(Math.max(min, value - step))}
           style={{ width: 32, height: 36, background: '#f1f3f5', border: '1px solid #dee2e6', borderRadius: '8px 0 0 8px', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: '#495057' }}>−</button>
-        <input type="number" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))}
+        <input type="number" min={min} max={max} value={value}
+          onChange={e => onChange(Number(e.target.value))}
           style={{ ...I, textAlign: 'center', borderRadius: 0, width: 64, padding: '7px 0', fontSize: 14, fontWeight: 700, borderLeft: 'none', borderRight: 'none' }} />
         <button type="button" onClick={() => onChange(Math.min(max, value + step))}
           style={{ width: 32, height: 36, background: '#f1f3f5', border: '1px solid #dee2e6', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: '#495057' }}>+</button>
@@ -131,76 +118,53 @@ function NumInput({ label, value, min, max, step = 1, unit, onChange, recommend 
   )
 }
 
-// ── 라벨 설정 컴포넌트 (이모지/이미지/텍스트 선택) ────────
-function LabelConfigEditor({
-  label, value, onChange, cardSlug
-}: {
-  label: string
-  value: LabelConfig | undefined
-  onChange: (v: LabelConfig) => void
-  cardSlug: string
+// ── LabelConfig 편집기 ────────────────────────────────────────
+function LabelCfgEditor({ label, value, onChange, cardSlug }: {
+  label: string; value?: LabelConfig; onChange: (v: LabelConfig) => void; cardSlug: string
 }) {
   const cfg: LabelConfig = value ?? { mode: 'none' }
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-
   const modeBtn = (m: LabelMode, txt: string) => (
     <button type="button" onClick={() => onChange({ ...cfg, mode: m })}
       style={{ flex: 1, padding: '6px 4px', fontSize: 11, fontWeight: cfg.mode === m ? 700 : 400, border: `1.5px solid ${cfg.mode === m ? '#4263eb' : '#dee2e6'}`, background: cfg.mode === m ? '#e7f0ff' : '#fff', borderRadius: 7, cursor: 'pointer', color: cfg.mode === m ? '#4263eb' : '#495057' }}>
       {txt}
     </button>
   )
-
   return (
     <div style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
       <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#495057', marginBottom: 8 }}>{label}</label>
       <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-        {modeBtn('none', '없음')}
-        {modeBtn('emoji', '이모지')}
-        {modeBtn('image', '이미지')}
-        {modeBtn('text', '텍스트')}
+        {modeBtn('none', '없음')}{modeBtn('emoji', '이모지')}
+        {modeBtn('image', '이미지')}{modeBtn('text', '텍스트')}
       </div>
-
       {cfg.mode === 'emoji' && (
         <div>
-          {/* 기본 이모지 목록 */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
             {DEFAULT_LABEL_EMOJIS.map(e => (
               <button key={e.key} type="button" onClick={() => onChange({ ...cfg, emoji: e.emoji })}
                 style={{ padding: '4px 10px', fontSize: 14, border: `1.5px solid ${cfg.emoji === e.emoji ? '#4263eb' : '#dee2e6'}`, background: cfg.emoji === e.emoji ? '#e7f0ff' : '#fff', borderRadius: 8, cursor: 'pointer', minWidth: 36, textAlign: 'center' }}>
-                {e.emoji || '∅'} <span style={{ fontSize: 10, color: '#868e96' }}>{e.label}</span>
+                {e.emoji || '∅'} <span style={{ fontSize: 9, color: '#868e96' }}>{e.label}</span>
               </button>
             ))}
           </div>
           <input style={{ ...I, padding: '7px 10px', fontSize: 16 }}
-            value={cfg.emoji ?? ''} onChange={e => onChange({ ...cfg, emoji: e.target.value })}
-            placeholder="직접 이모지 입력 예: 📱" />
+            value={cfg.emoji ?? ''} onChange={e => onChange({ ...cfg, emoji: e.target.value })} placeholder="이모지 직접 입력" />
         </div>
       )}
-
       {cfg.mode === 'image' && (
         <div>
-          <ImageUploader
-            value={cfg.imageUrl ?? ''}
-            onChange={url => onChange({ ...cfg, imageUrl: url })}
-            cardSlug={`${cardSlug}-label`}
-            bucket="card-images"
-            folder="labels"
-          />
+          <ImageUploader value={cfg.imageUrl ?? ''} onChange={url => onChange({ ...cfg, imageUrl: url })} cardSlug={`${cardSlug}-lbl`} bucket="card-images" folder="labels" />
           <input style={{ ...I, padding: '7px 10px', fontSize: 12, marginTop: 6 }}
-            value={cfg.imageUrl ?? ''} onChange={e => onChange({ ...cfg, imageUrl: e.target.value })}
-            placeholder="또는 이미지 URL 직접 입력" />
+            value={cfg.imageUrl ?? ''} onChange={e => onChange({ ...cfg, imageUrl: e.target.value })} placeholder="또는 이미지 URL" />
         </div>
       )}
-
       {cfg.mode === 'text' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input style={{ ...I, padding: '7px 10px', fontSize: 13 }}
-            value={cfg.text ?? ''} onChange={e => onChange({ ...cfg, text: e.target.value })}
-            placeholder="텍스트 라벨 예: Mobile, Mail, Tel" />
+            value={cfg.text ?? ''} onChange={e => onChange({ ...cfg, text: e.target.value })} placeholder="예: Mobile, Mail, Tel" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
             <div>
               <label style={{ fontSize: 10, color: '#868e96', display: 'block', marginBottom: 3 }}>크기(px)</label>
-              <input type="number" min={8} max={20} value={cfg.fontSize ?? 12}
+              <input type="number" min={0} max={100} value={cfg.fontSize ?? 12}
                 onChange={e => onChange({ ...cfg, fontSize: Number(e.target.value) })}
                 style={{ ...I, padding: '5px 8px', fontSize: 12 }} />
             </div>
@@ -216,7 +180,9 @@ function LabelConfigEditor({
               <label style={{ fontSize: 10, color: '#868e96', display: 'block', marginBottom: 3 }}>글씨체</label>
               <select value={cfg.fontFamily ?? 'pretendard'} onChange={e => onChange({ ...cfg, fontFamily: e.target.value as any })}
                 style={{ ...I, padding: '5px 8px', fontSize: 12 }}>
-                {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                <option value="pretendard">기본</option>
+                <option value="serif">명조체</option>
+                <option value="mono">고정폭</option>
               </select>
             </div>
           </div>
@@ -226,7 +192,7 @@ function LabelConfigEditor({
   )
 }
 
-// ── 실시간 미리보기 ───────────────────────────────────────
+// ── 실시간 미리보기 — 실제 명함과 완전 동일한 구조 ───────────
 function LivePreview({ f, extraLinks, design, companies, newsItems }: {
   f: any; extraLinks: LinkItem[]; design: CardDesignOptions
   companies: Company[]; newsItems: any[]
@@ -235,43 +201,50 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
   const isLight = ['afg-light', 'clean-white', 'warm-white'].includes(f.template_key)
 
   const cc = design.custom_colors as any
-  const pageBg   = cc?.page_bg    || tpl?.preview    || '#0a0a0a'
-  const cardBg   = cc?.card_bg    || (isLight ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.07)')
-  const textName = cc?.name_color || (isLight ? '#1a1a1a' : '#ffffff')
-  const textSub  = cc?.desc_color || (isLight ? '#555555' : '#94a3b8')
-  const textMuted= isLight ? '#888' : '#64748b'
-  const btnColor = cc?.btn_color  || tpl?.previewGradient || (isLight ? '#1e40af' : '#1e3a5f')
-  const accent   = cc?.accent     || (isLight ? '#1e40af' : '#3b82f6')
-  const border   = isLight ? '#e9ecef' : 'rgba(255,255,255,0.1)'
-  const footerBg = isLight ? '#f8f9fa' : 'rgba(255,255,255,0.04)'
+  const pageBg    = cc?.page_bg    || tpl?.preview   || '#0a0a0a'
+  const cardBg    = cc?.card_bg    || (isLight ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.07)')
+  const textName  = cc?.name_color || (isLight ? '#1a1a1a' : '#ffffff')
+  const textSub   = cc?.desc_color || (isLight ? '#555555' : '#94a3b8')
+  const textMuted = isLight ? '#888' : '#64748b'
+  const btnColor  = cc?.btn_color  || tpl?.previewGradient || (isLight ? '#1e40af' : '#1e3a5f')
+  const accent    = cc?.accent     || (isLight ? '#1e40af' : '#3b82f6')
+  const border    = isLight ? '#e9ecef' : 'rgba(255,255,255,0.1)'
+  const footerBg  = isLight ? '#f8f9fa' : 'rgba(255,255,255,0.04)'
+  const menuActiveBg = isLight ? `${accent}14` : 'rgba(255,255,255,0.1)'
+  const teamBadgeBg  = cc?.team_badge_bg   ?? (cardBg + 'dd')
+  const teamBadgeText = cc?.team_badge_text ?? textSub
+  const isLightBg = ['#ffffff', '#faf9f7', '#f5f6f8', '#f4f4f5'].includes(pageBg)
 
   const selectedCompany = companies.find(c => c.id === f.company_id)
   const bgImageUrl = f.company_background_url || selectedCompany?.background_url ||
     (['afg-dark', 'afg-light'].includes(f.template_key) ? '/afg-background.png' : null)
   const logoUrl = f.company_logo_url || selectedCompany?.logo_url || null
-  const isLightBg = ['#ffffff', '#faf9f7', '#f5f6f8', '#f4f4f5'].includes(pageBg)
 
   const btnR = { none: '0', sm: '4px', md: '8px', lg: '10px', full: '9999px' }[design.btn_radius || 'lg']
   const btnH = { sm: '42px', md: '50px', lg: '56px' }[design.btn_size || 'md']
 
-  const fzName = design.font_size_name || 28
-  const fzSub  = design.font_size_sub  || 14
-  const fzBody = design.font_size_body || 13
-  const fzTeam = design.font_size_team || 11
-  const iconSz = design.icon_size      || 22
-
-  const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
+  // ✅ 실제 명함과 동일한 값 사용
+  const fzName = design.font_size_name  ?? 28
+  const fzSub  = design.font_size_sub   ?? 14
+  const fzBody = design.font_size_body  ?? 13
+  const fzTeam = design.font_size_team  ?? 11
+  const iconSz = design.icon_size       ?? 22
+  const logoH  = design.logo_height     ?? 26
   const profileY = design.profile_position_y ?? 15
 
-  // 라벨 렌더링 헬퍼
-  function renderLabel(cfg?: LabelConfig, fallback?: string) {
-    if (!cfg || cfg.mode === 'none') return fallback ? <span style={{ opacity: 0.5 }}>{fallback}</span> : null
-    if (cfg.mode === 'emoji') return <span style={{ fontSize: Math.min(iconSz, 16) }}>{cfg.emoji}</span>
-    if (cfg.mode === 'image' && cfg.imageUrl) return <img src={cfg.imageUrl} alt="" style={{ height: 14, width: 'auto', objectFit: 'contain' }} />
-    if (cfg.mode === 'text' && cfg.text) {
-      const ff = cfg.fontFamily === 'serif' ? 'Georgia, serif' : cfg.fontFamily === 'mono' ? 'monospace' : 'inherit'
-      return <span style={{ fontSize: cfg.fontSize ?? 11, fontWeight: cfg.fontWeight === 'bold' ? 700 : 400, fontFamily: ff }}>{cfg.text}</span>
+  const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
+
+  // 라벨 렌더 헬퍼 (미리보기용)
+  function PreviewLabel({ cfgKey }: { cfgKey: string }) {
+    const cfgMap: Record<string, string> = {
+      phone: 'phone_cfg', email: 'email_cfg', address: 'address_cfg',
+      website: 'website_cfg', extension: 'extension_cfg', fax: 'fax_cfg',
     }
+    const cfg = (lb as any)[cfgMap[cfgKey]] as LabelConfig | undefined
+    if (cfg && cfg.mode === 'emoji' && cfg.emoji) return <span style={{ fontSize: 11, marginRight: 3 }}>{cfg.emoji}</span>
+    if (cfg && cfg.mode === 'text' && cfg.text) return <span style={{ fontSize: 10, marginRight: 3, opacity: 0.8 }}>{cfg.text}</span>
+    const simple = (lb as any)[cfgKey] as string | undefined
+    if (simple) return <span style={{ marginRight: 3 }}>{simple}</span>
     return null
   }
 
@@ -285,25 +258,34 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
       <div style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '85vh', overflowY: 'auto' }}>
 
         {/* 히어로 */}
-        <div style={{ position: 'relative', height: '58vw', maxHeight: 300, minHeight: 140, overflow: 'hidden', background: bgImageUrl ? 'transparent' : (isLight ? '#f0f0f0' : pageBg) }}>
-          {bgImageUrl && <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 30%' }} />}
+        <div style={{ position: 'relative', height: '58vw', maxHeight: 280, minHeight: 130, overflow: 'hidden', background: pageBg }}>
+          {/* ✅ 배경 먼저 (zIndex 1) */}
+          {bgImageUrl && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 30%' }} />
+          )}
+          {/* ✅ 프로필 위에 (zIndex 5) */}
           {f.profile_image_url
-            ? <img src={f.profile_image_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `center ${profileY}%` }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            : <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 66, height: 66, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>👤</div></div>
+            ? <img src={f.profile_image_url} alt="" style={{ position: 'absolute', inset: 0, zIndex: 5, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `center ${profileY}%` }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            : <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 66, height: 66, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>👤</div>
+              </div>
           }
-          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg,rgba(0,0,0,0.06) 0%,transparent 30%,transparent 55%,${pageBg}88 78%,${pageBg} 100%)` }} />
+          <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg,rgba(0,0,0,0.04) 0%,transparent 20%,transparent 50%,${pageBg}70 75%,${pageBg} 100%)` }} />
           {f.team_name && (
-            <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: fzTeam * 0.85, padding: '2px 8px', borderRadius: 8, fontWeight: 500 }}>
+            <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: teamBadgeBg, backdropFilter: 'blur(8px)', color: teamBadgeText, fontSize: fzTeam * 0.85, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>
               {f.team_name}
             </div>
           )}
         </div>
 
         {/* 본문 */}
-        <div style={{ padding: '10px 14px 20px', marginTop: -6 }}>
-          {logoUrl && <img src={logoUrl} alt="" style={{ height: 18, objectFit: 'contain', marginBottom: 7, display: 'block', filter: isLightBg ? 'none' : 'brightness(0) invert(1)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
+        <div style={{ padding: '10px 14px 20px', marginTop: -4 }}>
+          {/* ✅ 로고 — 흰 네모 없이 단순 img */}
+          {logoUrl && (
+            <img src={logoUrl} alt="" style={{ display: 'block', height: logoH, width: 'auto', maxWidth: 120, objectFit: 'contain', marginBottom: 8, filter: isLightBg ? 'none' : 'brightness(0) invert(1)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          )}
           {f.name && <h1 style={{ fontSize: fzName, fontWeight: 700, color: textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{f.name}</h1>}
-          {f.english_name && <p style={{ fontSize: fzSub - 1, color: accent, margin: '0 0 3px', fontWeight: 500 }}>{f.english_name}</p>}
+          {f.english_name && <p style={{ fontSize: Math.max(fzSub - 1, 10), color: accent, margin: '0 0 3px', fontWeight: 500 }}>{f.english_name}</p>}
           {f.position && <p style={{ fontSize: fzSub, color: textSub, margin: 0, lineHeight: 1.5 }}>{f.position}{f.company_name && <span style={{ color: textMuted }}> · {f.company_name}</span>}</p>}
 
           {f.short_intro && (
@@ -318,13 +300,13 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7 }}>
               {[
                 { key: 'insurance_claim', label: lb.menu_insurance || '보험금청구', icon: '📋', url: f.menu_insurance_claim_url },
-                { key: 'check_insurance', label: lb.menu_check || '내보험조회', icon: '🔍', url: f.menu_check_insurance_url },
-                { key: 'analysis', label: lb.menu_analysis || '보장분석', icon: '📊', url: f.menu_analysis_url },
-                { key: 'consult', label: lb.menu_consult || '상담신청', icon: '💬', url: f.menu_consult_url },
+                { key: 'check_insurance', label: lb.menu_check     || '내보험조회', icon: '🔍', url: f.menu_check_insurance_url },
+                { key: 'analysis',        label: lb.menu_analysis  || '보장분석',   icon: '📊', url: f.menu_analysis_url },
+                { key: 'consult',         label: lb.menu_consult   || '상담신청',   icon: '💬', url: f.menu_consult_url },
               ].map(item => {
                 const active = !!item.url
                 return (
-                  <div key={item.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '11px 3px', borderRadius: 9, background: active ? (isLight ? `${accent}14` : 'rgba(255,255,255,0.1)') : (isLight ? '#f8f9fa' : 'rgba(255,255,255,0.05)'), border: `1px solid ${active ? accent + '40' : border}`, opacity: active ? 1 : 0.4 }}>
+                  <div key={item.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '11px 3px', borderRadius: 9, background: active ? menuActiveBg : (isLight ? '#f8f9fa' : 'rgba(255,255,255,0.05)'), border: `1px solid ${active ? accent + '40' : border}`, opacity: active ? 1 : 0.4 }}>
                     {design.show_icon && <span style={{ fontSize: iconSz }}>{item.icon}</span>}
                     {design.show_text && <span style={{ fontSize: 8, color: isLight ? '#495057' : '#94a3b8', textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>{item.label}</span>}
                   </div>
@@ -343,12 +325,17 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
 
           {/* 추가 링크 */}
           {extraLinks.filter(l => l.url).map(link => (
-            <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: btnH, padding: '0 14px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 7, color: textSub, fontSize: fzBody }}>
+            <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 14px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 7, color: textSub, fontSize: fzBody }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                {/* ✅ 이모지 표시 */}
                 {link.prefixType === 'emoji' && link.prefixEmoji && <span style={{ fontSize: iconSz }}>{link.prefixEmoji}</span>}
                 {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto' }} />}
                 {link.prefixType === 'text' && link.prefixText && <span style={{ fontSize: 11, opacity: 0.7 }}>{link.prefixText}</span>}
                 <span style={{ fontWeight: 500 }}>{link.label}</span>
+                {/* ✅ 팩스/내선: 번호 표시 */}
+                {(link.type === 'fax' || link.type === 'extension') && link.url && (
+                  <span style={{ fontSize: fzBody - 1, color: textMuted }}>{link.url}</span>
+                )}
               </span>
               <span style={{ opacity: 0.4, fontSize: 15 }}>›</span>
             </div>
@@ -371,33 +358,17 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
-          {/* 하단 회사 정보 */}
+          {/* 하단 */}
           <div style={{ padding: '12px 14px', background: footerBg, border: `1px solid ${border}`, borderRadius: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 9 }}>
-              {logoUrl ? <img src={logoUrl} alt="" style={{ height: 24, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} /> : <div style={{ width: 26, height: 26, borderRadius: 6, background: cardBg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏢</div>}
+              {logoUrl ? <img src={logoUrl} alt="" style={{ height: Math.max(logoH - 4, 18), width: 'auto', maxWidth: 80, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} /> : <div style={{ width: 26, height: 26, borderRadius: 6, background: cardBg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏢</div>}
               {f.company_name && <p style={{ fontSize: fzBody + 1, fontWeight: 700, color: textName, margin: 0 }}>{f.company_name}</p>}
             </div>
             <div style={{ paddingTop: 9, borderTop: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {f.address && (
-                <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {renderLabel(design.labels?.address_cfg)}{f.address}
-                </p>
-              )}
-              {f.website_url && (
-                <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {renderLabel(design.labels?.website_cfg)}{f.website_url.replace(/^https?:\/\//, '')}
-                </p>
-              )}
-              {f.phone && (
-                <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {renderLabel(design.labels?.phone_cfg)}{f.phone}
-                </p>
-              )}
-              {f.email && (
-                <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {renderLabel(design.labels?.email_cfg)}{f.email}
-                </p>
-              )}
+              {f.address     && <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center' }}><PreviewLabel cfgKey="address" />{f.address}</p>}
+              {f.website_url && <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center' }}><PreviewLabel cfgKey="website" />{f.website_url.replace(/^https?:\/\//, '')}</p>}
+              {f.phone       && <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center' }}><PreviewLabel cfgKey="phone" />{f.phone}</p>}
+              {f.email       && <p style={{ fontSize: 10, color: textMuted, margin: 0, display: 'flex', alignItems: 'center' }}><PreviewLabel cfgKey="email" />{f.email}</p>}
             </div>
           </div>
         </div>
@@ -407,21 +378,21 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
       <div style={{ marginTop: 8, padding: '7px 11px', background: '#f8f9fa', borderRadius: 9, display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 10, color: '#9ca3af' }}>
         <span>이름 {design.font_size_name}px</span>
         <span>팀 {design.font_size_team}px</span>
+        <span>로고 {design.logo_height}px</span>
         <span>본문 {design.font_size_body}px</span>
-        <span>아이콘 {design.icon_size}px</span>
         <span>{TEMPLATES[f.template_key as TemplateKey]?.label ?? f.template_key}</span>
       </div>
     </div>
   )
 }
 
-// ── 메인 CardForm ─────────────────────────────────────────
+// ── 메인 CardForm ─────────────────────────────────────────────
 export function CardForm({ mode, card, companies = [] }: Props) {
-  const router  = useRouter()
+  const router   = useRouter()
   const supabase = createClient()
-  const [saving, setSaving] = useState(false)
-  const [saved,  setSaved]  = useState(false)
-  const [error,  setError]  = useState('')
+  const [saving, setSaving]       = useState(false)
+  const [saved,  setSaved]        = useState(false)
+  const [error,  setError]        = useState('')
   const [activeTab, setActiveTab] = useState<'basic' | 'links' | 'design' | 'anim' | 'labels' | 'news'>('basic')
   const [showLinkPicker, setShowLinkPicker] = useState(false)
 
@@ -451,45 +422,45 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   })
 
   function migrateDesign(raw: any): CardDesignOptions {
-    const base = { ...DEFAULT_DESIGN_OPTIONS }
-    if (!raw) return base
+    if (!raw) return { ...DEFAULT_DESIGN_OPTIONS }
     const labels = raw.labels ?? (raw.contact_labels ? {
-      phone: raw.contact_labels.phone ?? '',
-      email: raw.contact_labels.email ?? '',
-      address: raw.contact_labels.address ?? '',
-      website: raw.contact_labels.website ?? '',
+      phone: raw.contact_labels.phone ?? '', email: raw.contact_labels.email ?? '',
+      address: raw.contact_labels.address ?? '', website: raw.contact_labels.website ?? '',
     } : null)
     return {
-      ...base,
-      animation_type:     raw.animation_type    ?? base.animation_type,
-      animation_speed:    raw.animation_speed   ?? base.animation_speed,
+      ...DEFAULT_DESIGN_OPTIONS,
+      animation_type:     raw.animation_type    ?? DEFAULT_DESIGN_OPTIONS.animation_type,
+      animation_speed:    raw.animation_speed   ?? 'normal',
       animation_delay:    raw.animation_delay   ?? 0,
-      animation_on:       raw.animation_on      ?? base.animation_on,
-      show_icon:          raw.show_icon          ?? base.show_icon,
-      show_text:          raw.show_text          ?? base.show_text,
-      icon_size:          typeof raw.icon_size === 'number' ? raw.icon_size : 22,
-      font_size_name:     raw.font_size_name    ?? 28,
-      font_size_sub:      raw.font_size_sub     ?? 14,
-      font_size_body:     raw.font_size_body    ?? 13,
-      font_size_team:     raw.font_size_team    ?? 11,
-      btn_radius:         raw.btn_radius         ?? base.btn_radius,
-      btn_size:           raw.btn_size           ?? base.btn_size,
-      profile_position_y: raw.profile_position_y ?? 15,
+      animation_on:       raw.animation_on      ?? true,
+      show_icon:          raw.show_icon          ?? true,
+      show_text:          raw.show_text          ?? true,
+      icon_size:          typeof raw.icon_size   === 'number' ? raw.icon_size   : 22,
+      font_size_name:     typeof raw.font_size_name === 'number' ? raw.font_size_name : 28,
+      font_size_sub:      typeof raw.font_size_sub  === 'number' ? raw.font_size_sub  : 14,
+      font_size_body:     typeof raw.font_size_body === 'number' ? raw.font_size_body : 13,
+      font_size_team:     typeof raw.font_size_team === 'number' ? raw.font_size_team : 11,
+      logo_height:        typeof raw.logo_height === 'number'    ? raw.logo_height    : 26,
+      btn_radius:         raw.btn_radius ?? 'lg',
+      btn_size:           raw.btn_size   ?? 'md',
+      profile_position_y: typeof raw.profile_position_y === 'number' ? raw.profile_position_y : 15,
       custom_colors: raw.custom_colors ? {
-        page_bg:    raw.custom_colors.page_bg    ?? raw.custom_colors.bg         ?? '#0a0a0a',
+        page_bg:    raw.custom_colors.page_bg    ?? '#0a0a0a',
         card_bg:    raw.custom_colors.card_bg    ?? '#1a1a2e',
-        btn_color:  raw.custom_colors.btn_color  ?? raw.custom_colors.btn_primary ?? '#1e40af',
-        name_color: raw.custom_colors.name_color ?? raw.custom_colors.text_name   ?? '#ffffff',
-        desc_color: raw.custom_colors.desc_color ?? raw.custom_colors.text_sub    ?? '#94a3b8',
+        btn_color:  raw.custom_colors.btn_color  ?? '#1e40af',
+        name_color: raw.custom_colors.name_color ?? '#ffffff',
+        desc_color: raw.custom_colors.desc_color ?? '#94a3b8',
         accent:     raw.custom_colors.accent     ?? '#3b82f6',
+        team_badge_bg:   raw.custom_colors.team_badge_bg   ?? undefined,
+        team_badge_text: raw.custom_colors.team_badge_text ?? undefined,
       } : null,
       labels,
     }
   }
 
-  const [design, setDesign] = useState<CardDesignOptions>(migrateDesign(card?.design_options))
-  const [extraLinks, setExtraLinks] = useState<LinkItem[]>(Array.isArray(card?.extra_links) ? card.extra_links : [])
-  const [newsItems, setNewsItems] = useState<Omit<CardNews, 'id' | 'card_id' | 'created_at'>[]>(
+  const [design, setDesign]     = useState<CardDesignOptions>(migrateDesign(card?.design_options))
+  const [extraLinks, setLinks]  = useState<LinkItem[]>(Array.isArray(card?.extra_links) ? card.extra_links : [])
+  const [newsItems, setNews]    = useState<Omit<CardNews, 'id' | 'card_id' | 'created_at'>[]>(
     (card?.card_news ?? []).map(n => ({
       title: n.title, summary: n.summary,
       image_url: n.image_url ?? '', link_url: n.link_url ?? '',
@@ -504,9 +475,9 @@ export function CardForm({ mode, card, companies = [] }: Props) {
     setDesign(p => ({
       ...p,
       custom_colors: {
-        page_bg: p.custom_colors?.page_bg ?? '#0a0a0a', card_bg: p.custom_colors?.card_bg ?? '#1a1a2e',
-        btn_color: p.custom_colors?.btn_color ?? '#1e40af', name_color: p.custom_colors?.name_color ?? '#ffffff',
-        desc_color: p.custom_colors?.desc_color ?? '#94a3b8', accent: p.custom_colors?.accent ?? '#3b82f6',
+        page_bg: '#0a0a0a', card_bg: '#1a1a2e', btn_color: '#1e40af',
+        name_color: '#ffffff', desc_color: '#94a3b8', accent: '#3b82f6',
+        ...(p.custom_colors ?? {}),
         [k]: v,
       },
     }))
@@ -515,33 +486,32 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   function setLbl(k: keyof AllLabels, v: any) {
     setDesign(p => ({ ...p, labels: { ...(p.labels ?? {}), [k]: v } }))
   }
-
-  function setLblCfg(key: keyof AllLabels, cfg: LabelConfig) {
-    setDesign(p => ({ ...p, labels: { ...(p.labels ?? {}), [key]: cfg } }))
+  function setLblCfg(k: keyof AllLabels, cfg: LabelConfig) {
+    setDesign(p => ({ ...p, labels: { ...(p.labels ?? {}), [k]: cfg } }))
   }
 
   function addLink(type: LinkType, label: string, emoji: string) {
-    setExtraLinks(p => [...p, { id: generateId(), type, label, url: '', emoji, prefixType: 'none' }])
+    setLinks(p => [...p, { id: generateId(), type, label, url: '', emoji, prefixType: 'none' }])
     setShowLinkPicker(false)
   }
   function updateLink(id: string, field: keyof LinkItem, v: any) {
-    setExtraLinks(p => p.map(l => l.id === id ? { ...l, [field]: v } : l))
+    setLinks(p => p.map(l => l.id === id ? { ...l, [field]: v } : l))
   }
-  function removeLink(id: string) { setExtraLinks(p => p.filter(l => l.id !== id)) }
+  function removeLink(id: string) { setLinks(p => p.filter(l => l.id !== id)) }
 
   function addNews() {
-    setNewsItems(p => [...p, { title: '', summary: '', image_url: '', link_url: '', category: 'insurance', sort_order: p.length, is_visible: true }])
+    setNews(p => [...p, { title: '', summary: '', image_url: '', link_url: '', category: 'insurance', sort_order: p.length, is_visible: true }])
   }
   function updateNews(idx: number, k: string, v: any) {
-    setNewsItems(p => p.map((n, i) => i === idx ? { ...n, [k]: v } : n))
+    setNews(p => p.map((n, i) => i === idx ? { ...n, [k]: v } : n))
   }
-  function removeNews(idx: number) { setNewsItems(p => p.filter((_, i) => i !== idx)) }
+  function removeNews(idx: number) { setNews(p => p.filter((_, i) => i !== idx)) }
 
-  function handleCompanySelect(companyId: string) {
-    const found = companies.find(c => c.id === companyId)
+  function handleCompanySelect(cid: string) {
+    const found = companies.find(c => c.id === cid)
     if (found) {
       setF(p => ({
-        ...p, company_id: companyId, company_name: found.name,
+        ...p, company_id: cid, company_name: found.name,
         company_logo_url: found.logo_url ?? '',
         company_background_url: found.background_url ?? '',
       }))
@@ -574,8 +544,9 @@ export function CardForm({ mode, card, companies = [] }: Props) {
         menu_analysis_url: f.menu_analysis_url.trim() || null,
         menu_consult_url: f.menu_consult_url.trim() || null,
         extra_links: extraLinks.filter(l => l.url.trim()),
-        design_options: design, template_key: f.template_key,
-        is_active: f.is_active, updated_at: new Date().toISOString(),
+        design_options: design,
+        template_key: f.template_key, is_active: f.is_active,
+        updated_at: new Date().toISOString(),
       }
       let cardId = card?.id
       if (mode === 'create') {
@@ -611,9 +582,9 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   })
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 28, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 410px', gap: 28, alignItems: 'start' }}>
 
-      {/* 왼쪽 */}
+      {/* ── 왼쪽 편집 ── */}
       <div>
         {/* 탭 */}
         <div style={{ display: 'flex', gap: 4, background: '#f1f3f5', padding: 4, borderRadius: 12, marginBottom: 20, overflow: 'auto' }}>
@@ -633,7 +604,6 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                 value={f.slug} onChange={e => set('slug')(e.target.value)}
                 placeholder="영문소문자·숫자·하이픈" disabled={mode === 'edit'} />
             </Field>
-
             <SectionHeader>이름·직함</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <Field label="이름" required><input className="admin-input" style={I} value={f.name} onChange={e => set('name')(e.target.value)} /></Field>
@@ -641,7 +611,6 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               <Field label="직함" required><input className="admin-input" style={I} value={f.position} onChange={e => set('position')(e.target.value)} /></Field>
               <Field label="팀·브랜치명"><input className="admin-input" style={I} value={f.team_name} onChange={e => set('team_name')(e.target.value)} /></Field>
             </div>
-
             <SectionHeader>회사 (선택 시 로고+배경 자동 세팅)</SectionHeader>
             {companies.length > 0 && (
               <Field label="회사 선택">
@@ -653,27 +622,16 @@ export function CardForm({ mode, card, companies = [] }: Props) {
             )}
             <Field label="회사명" required><input className="admin-input" style={I} value={f.company_name} onChange={e => set('company_name')(e.target.value)} /></Field>
             <Field label="한 줄 소개"><textarea className="admin-input" style={{ ...I, resize: 'none' }} rows={2} value={f.short_intro} onChange={e => set('short_intro')(e.target.value)} /></Field>
-
             <SectionHeader>프로필 사진</SectionHeader>
             <ImageUploader value={f.profile_image_url} onChange={set('profile_image_url')} cardSlug={f.slug || 'card'} />
-            <div style={{ marginTop: 10 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>또는 URL 직접 입력</label>
-              <input className="admin-input" style={I} value={f.profile_image_url} onChange={e => set('profile_image_url')(e.target.value)} placeholder="https://..." />
-            </div>
-
+            <div style={{ marginTop: 10 }}><input className="admin-input" style={I} value={f.profile_image_url} onChange={e => set('profile_image_url')(e.target.value)} placeholder="또는 URL 직접 입력" /></div>
             <SectionHeader>회사 로고</SectionHeader>
             <ImageUploader value={f.company_logo_url} onChange={set('company_logo_url')} cardSlug={`${f.slug || 'card'}-logo`} bucket="card-images" folder="logos" />
-            <div style={{ marginTop: 10 }}>
-              <input className="admin-input" style={I} value={f.company_logo_url} onChange={e => set('company_logo_url')(e.target.value)} placeholder="https://..." />
-            </div>
-
+            <div style={{ marginTop: 10 }}><input className="admin-input" style={I} value={f.company_logo_url} onChange={e => set('company_logo_url')(e.target.value)} placeholder="https://..." /></div>
             <SectionHeader>회사 배경 이미지</SectionHeader>
-            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 10 }}>명함 상단 배경. 회사 선택 시 자동으로 불러옵니다.</p>
+            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 10 }}>프로필 사진 뒤에 표시되는 브랜드 배경입니다.</p>
             <ImageUploader value={f.company_background_url} onChange={set('company_background_url')} cardSlug={`${f.slug || 'card'}-bg`} bucket="card-images" folder="backgrounds" />
-            <div style={{ marginTop: 10 }}>
-              <input className="admin-input" style={I} value={f.company_background_url} onChange={e => set('company_background_url')(e.target.value)} placeholder="https://..." />
-            </div>
-
+            <div style={{ marginTop: 10 }}><input className="admin-input" style={I} value={f.company_background_url} onChange={e => set('company_background_url')(e.target.value)} placeholder="https://..." /></div>
             <SectionHeader>메뉴 항목 URL</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <Field label="📋 보험금청구"><input className="admin-input" style={I} value={f.menu_insurance_claim_url} onChange={e => set('menu_insurance_claim_url')(e.target.value)} placeholder="https://..." /></Field>
@@ -681,7 +639,6 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               <Field label="📊 보장분석"><input className="admin-input" style={I} value={f.menu_analysis_url} onChange={e => set('menu_analysis_url')(e.target.value)} placeholder="https://..." /></Field>
               <Field label="💬 상담신청"><input className="admin-input" style={I} value={f.menu_consult_url} onChange={e => set('menu_consult_url')(e.target.value)} placeholder="https://..." /></Field>
             </div>
-
             <SectionHeader>공개 설정</SectionHeader>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8f9fa', border: '1.5px solid #e9ecef', borderRadius: 10, cursor: 'pointer' }}>
               <div>
@@ -706,18 +663,14 @@ export function CardForm({ mode, card, companies = [] }: Props) {
             <Field label="온라인 문의 URL"><input className="admin-input" style={I} value={f.inquiry_url} onChange={e => set('inquiry_url')(e.target.value)} placeholder="https://..." /></Field>
 
             <SectionHeader>추가 링크 버튼</SectionHeader>
-            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 12 }}>각 항목 앞에 이모지·이미지·텍스트 중 하나를 붙일 수 있습니다.</p>
+            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 12 }}>팩스·내선은 버튼에 번호가 함께 표시됩니다.</p>
             {extraLinks.map(link => (
               <div key={link.id} style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 12, padding: 14, marginBottom: 10 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ fontSize: 18 }}>{link.emoji}</span>
-                  <input style={{ ...I, flex: '0 0 90px', padding: '7px 10px', fontSize: 12 }}
-                    value={link.label} onChange={e => updateLink(link.id, 'label', e.target.value)} placeholder="버튼명" />
-                  <input style={{ ...I, flex: 1, padding: '7px 10px', fontSize: 12 }}
-                    value={link.url} onChange={e => updateLink(link.id, 'url', e.target.value)}
-                    placeholder={link.type === 'email' ? 'name@email.com' : 'https://...'} />
-                  <button type="button" onClick={() => removeLink(link.id)}
-                    style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff3f3', border: '1px solid #ffc9c9', borderRadius: 6, color: '#c92a2a', cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>✕</button>
+                  <input style={{ ...I, flex: '0 0 90px', padding: '7px 10px', fontSize: 12 }} value={link.label} onChange={e => updateLink(link.id, 'label', e.target.value)} placeholder="버튼명" />
+                  <input style={{ ...I, flex: 1, padding: '7px 10px', fontSize: 12 }} value={link.url} onChange={e => updateLink(link.id, 'url', e.target.value)} placeholder={link.type === 'email' ? 'name@email.com' : link.type === 'fax' || link.type === 'extension' ? '번호 입력' : 'https://...'} />
+                  <button type="button" onClick={() => removeLink(link.id)} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff3f3', border: '1px solid #ffc9c9', borderRadius: 6, color: '#c92a2a', cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>✕</button>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6c757d', marginBottom: 6 }}>항목 앞 요소</label>
@@ -739,29 +692,21 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                           </button>
                         ))}
                       </div>
-                      <input style={{ ...I, padding: '7px 10px', fontSize: 14 }}
-                        value={link.prefixEmoji ?? ''} onChange={e => updateLink(link.id, 'prefixEmoji', e.target.value)} placeholder="이모지 직접 입력" />
+                      <input style={{ ...I, padding: '7px 10px', fontSize: 14 }} value={link.prefixEmoji ?? ''} onChange={e => updateLink(link.id, 'prefixEmoji', e.target.value)} placeholder="이모지 직접 입력" />
                     </div>
                   )}
-                  {link.prefixType === 'text' && (
-                    <input style={{ ...I, padding: '7px 10px', fontSize: 13, marginTop: 8 }}
-                      value={link.prefixText ?? ''} onChange={e => updateLink(link.id, 'prefixText', e.target.value)} placeholder="텍스트 라벨 예: Mobile" />
-                  )}
+                  {link.prefixType === 'text' && <input style={{ ...I, padding: '7px 10px', fontSize: 13, marginTop: 8 }} value={link.prefixText ?? ''} onChange={e => updateLink(link.id, 'prefixText', e.target.value)} placeholder="텍스트 라벨 예: Mobile" />}
                   {link.prefixType === 'image' && (
                     <div style={{ marginTop: 8 }}>
                       <ImageUploader value={link.prefixImage ?? ''} onChange={v => updateLink(link.id, 'prefixImage', v)} cardSlug={`link-${link.id}`} bucket="card-images" folder="icons" />
-                      <input style={{ ...I, padding: '7px 10px', fontSize: 12, marginTop: 6 }}
-                        value={link.prefixImage ?? ''} onChange={e => updateLink(link.id, 'prefixImage', e.target.value)} placeholder="또는 이미지 URL" />
+                      <input style={{ ...I, padding: '7px 10px', fontSize: 12, marginTop: 6 }} value={link.prefixImage ?? ''} onChange={e => updateLink(link.id, 'prefixImage', e.target.value)} placeholder="또는 이미지 URL" />
                     </div>
                   )}
                 </div>
               </div>
             ))}
             <div style={{ position: 'relative' }}>
-              <button type="button" onClick={() => setShowLinkPicker(v => !v)}
-                style={{ width: '100%', padding: '10px', background: '#f1f3f5', border: '1.5px dashed #ced4da', borderRadius: 10, color: '#495057', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                + 링크 버튼 추가
-              </button>
+              <button type="button" onClick={() => setShowLinkPicker(v => !v)} style={{ width: '100%', padding: '10px', background: '#f1f3f5', border: '1.5px dashed #ced4da', borderRadius: 10, color: '#495057', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ 링크 버튼 추가</button>
               {showLinkPicker && (
                 <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, background: '#fff', border: '1px solid #dee2e6', borderRadius: 14, padding: 14, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
@@ -772,8 +717,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                       </button>
                     ))}
                   </div>
-                  <button type="button" onClick={() => setShowLinkPicker(false)}
-                    style={{ width: '100%', marginTop: 10, padding: '7px', background: 'none', border: 'none', color: '#adb5bd', fontSize: 12, cursor: 'pointer' }}>닫기</button>
+                  <button type="button" onClick={() => setShowLinkPicker(false)} style={{ width: '100%', marginTop: 10, padding: '7px', background: 'none', border: 'none', color: '#adb5bd', fontSize: 12, cursor: 'pointer' }}>닫기</button>
                 </div>
               )}
             </div>
@@ -789,10 +733,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                 <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', background: f.template_key === t.key ? '#e7f0ff' : '#f8f9fa', border: `1.5px solid ${f.template_key === t.key ? '#4263eb' : '#e9ecef'}`, borderRadius: 12, cursor: 'pointer' }}>
                   <input type="radio" name="template" value={t.key} checked={f.template_key === t.key} onChange={() => set('template_key')(t.key as TemplateKey)} style={{ accentColor: '#4263eb', width: 16, height: 16 }} />
                   <div style={{ width: 28, height: 28, borderRadius: '50%', background: t.previewGradient ?? t.preview, border: '2px solid #dee2e6', flexShrink: 0 }} />
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#212529', margin: 0 }}>{t.label}</p>
-                    <p style={{ fontSize: 11, color: '#868e96', margin: '2px 0 0' }}>{t.description}</p>
-                  </div>
+                  <div><p style={{ fontSize: 13, fontWeight: 700, color: '#212529', margin: 0 }}>{t.label}</p><p style={{ fontSize: 11, color: '#868e96', margin: '2px 0 0' }}>{t.description}</p></div>
                   {f.template_key === t.key && <span style={{ marginLeft: 'auto', color: '#4263eb', fontSize: 16 }}>✓</span>}
                 </label>
               ))}
@@ -805,22 +746,78 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                 style={{ accentColor: '#4263eb', width: 16, height: 16 }} />
               <span style={{ fontSize: 13, color: '#495057', fontWeight: 600 }}>색상 직접 설정</span>
             </label>
+
             {design.custom_colors && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {([['page_bg', '페이지 배경색'], ['card_bg', '카드 배경색'], ['btn_color', '버튼 색'], ['name_color', '이름 색'], ['desc_color', '설명 글씨 색'], ['accent', '강조 색']] as [keyof CustomColors, string][]).map(([key, label]) => {
-                  const val = (design.custom_colors as any)?.[key] ?? '#000000'
-                  return (
-                    <div key={key}>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>{label}</label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="color" value={val} onChange={e => setCC(key, e.target.value)} style={{ width: 40, height: 40, border: 'none', borderRadius: 8, cursor: 'pointer', padding: 2 }} />
-                        <input style={{ ...I, flex: 1, padding: '8px 10px', fontSize: 13, fontFamily: 'monospace' }} value={val} onChange={e => setCC(key, e.target.value)} placeholder="#000000" />
+              <>
+                {/* ✅ 색상 추천 칩 — 클릭하면 즉시 적용 */}
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>💡 어울리는 조합 추천 (클릭하면 즉시 적용)</p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                  {Object.entries(COLOR_COMBOS).map(([key, combo]) => (
+                    <button key={key} type="button"
+                      onClick={() => {
+                        const c = combo.colors
+                        setDesign(p => ({
+                          ...p,
+                          custom_colors: {
+                            ...(p.custom_colors ?? {}),
+                            card_bg:    c[0].value,
+                            btn_color:  c[1].value,
+                            name_color: c[2].value,
+                            desc_color: c[3].value,
+                            accent:     c[4].value,
+                            page_bg:    p.custom_colors?.page_bg ?? '#0a0a0a',
+                          } as CustomColors,
+                        }))
+                      }}
+                      style={{ display: 'flex', flexDirection: 'column', padding: '8px 12px', background: '#f8f9fa', border: '1.5px solid #e9ecef', borderRadius: 10, cursor: 'pointer', gap: 6, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#212529' }}>{combo.label}</span>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {combo.colors.map(c => (
+                          <div key={c.name} title={c.name + ': ' + c.value} style={{ width: 16, height: 16, borderRadius: 3, background: c.value, border: '1px solid rgba(0,0,0,0.1)' }} />
+                        ))}
                       </div>
-                      {getColorTip(val) && <p style={{ fontSize: 11, color: '#4263eb', marginTop: 4 }}>💡 {getColorTip(val)}</p>}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {([
+                    ['page_bg',    '페이지 배경색'],
+                    ['card_bg',    '카드 배경색'],
+                    ['btn_color',  '버튼 색'],
+                    ['name_color', '이름 색'],
+                    ['desc_color', '설명 글씨 색'],
+                    ['accent',     '강조 색'],
+                  ] as [keyof CustomColors, string][]).map(([key, label]) => {
+                    const val = (design.custom_colors as any)?.[key] ?? '#000000'
+                    return (
+                      <div key={key}>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>{label}</label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input type="color" value={val} onChange={e => setCC(key, e.target.value)} style={{ width: 40, height: 40, border: 'none', borderRadius: 8, cursor: 'pointer', padding: 2 }} />
+                          <input style={{ ...I, flex: 1, padding: '8px 10px', fontSize: 13, fontFamily: 'monospace' }} value={val} onChange={e => setCC(key, e.target.value)} placeholder="#000000" />
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* ✅ 팀 뱃지 배경색 */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>팀명 뱃지 배경색</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input type="color" value={(design.custom_colors as any)?.team_badge_bg ?? '#0d1a2ddd'} onChange={e => setCC('team_badge_bg' as any, e.target.value)} style={{ width: 40, height: 40, border: 'none', borderRadius: 8, cursor: 'pointer', padding: 2 }} />
+                      <input style={{ ...I, flex: 1, padding: '8px 10px', fontSize: 13, fontFamily: 'monospace' }} value={(design.custom_colors as any)?.team_badge_bg ?? ''} onChange={e => setCC('team_badge_bg' as any, e.target.value)} placeholder="#0d1a2d (빈칸=기본값)" />
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>팀명 뱃지 글씨색</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input type="color" value={(design.custom_colors as any)?.team_badge_text ?? '#8fafc8'} onChange={e => setCC('team_badge_text' as any, e.target.value)} style={{ width: 40, height: 40, border: 'none', borderRadius: 8, cursor: 'pointer', padding: 2 }} />
+                      <input style={{ ...I, flex: 1, padding: '8px 10px', fontSize: 13, fontFamily: 'monospace' }} value={(design.custom_colors as any)?.team_badge_text ?? ''} onChange={e => setCC('team_badge_text' as any, e.target.value)} placeholder="#8fafc8 (빈칸=기본값)" />
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
             <SectionHeader>버튼 스타일</SectionHeader>
@@ -834,25 +831,28 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 6 }}>버튼 크기</label>
                 <select className="admin-input" style={I} value={design.btn_size} onChange={e => setDes('btn_size')(e.target.value)}>
-                  {[['sm', '작게'], ['md', '보통'], ['lg', '크게']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  {[['sm', '작게(44px)'], ['md', '보통(52px)'], ['lg', '크게(58px)']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
             </div>
 
-            <SectionHeader>글씨 크기</SectionHeader>
+            <SectionHeader>글씨 크기 (0~100px)</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-              <NumInput label="이름" value={design.font_size_name} min={16} max={48} unit="px" recommend={28} onChange={v => setDes('font_size_name')(v)} />
-              <NumInput label="직함/회사" value={design.font_size_sub} min={10} max={24} unit="px" recommend={14} onChange={v => setDes('font_size_sub')(v)} />
-              <NumInput label="본문" value={design.font_size_body} min={10} max={20} unit="px" recommend={13} onChange={v => setDes('font_size_body')(v)} />
-              <NumInput label="팀·브랜치명" value={design.font_size_team} min={8} max={18} unit="px" recommend={11} onChange={v => setDes('font_size_team')(v)} />
+              <NumInput label="이름" value={design.font_size_name} recommend={28} unit="px" onChange={v => setDes('font_size_name')(v)} />
+              <NumInput label="직함/회사" value={design.font_size_sub} recommend={14} unit="px" onChange={v => setDes('font_size_sub')(v)} />
+              <NumInput label="본문" value={design.font_size_body} recommend={13} unit="px" onChange={v => setDes('font_size_body')(v)} />
+              <NumInput label="팀·브랜치명" value={design.font_size_team} recommend={11} unit="px" onChange={v => setDes('font_size_team')(v)} />
             </div>
 
+            {/* ✅ 로고 크기 */}
+            <SectionHeader>로고 크기 (0~100px)</SectionHeader>
+            <NumInput label="회사 로고 높이" value={design.logo_height ?? 26} recommend={26} unit="px" onChange={v => setDes('logo_height')(v)} />
+
             <SectionHeader>프로필 사진 위치</SectionHeader>
-            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 8 }}>값이 클수록 아래쪽 (얼굴이 위에 있으면 줄이세요)</p>
+            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 8 }}>값이 클수록 아래쪽</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <input type="range" min={0} max={60} step={5} value={design.profile_position_y ?? 15}
-                onChange={e => setDes('profile_position_y')(Number(e.target.value))}
-                style={{ flex: 1, accentColor: '#4263eb' }} />
+                onChange={e => setDes('profile_position_y')(Number(e.target.value))} style={{ flex: 1, accentColor: '#4263eb' }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: '#4263eb', minWidth: 36 }}>{design.profile_position_y ?? 15}%</span>
             </div>
 
@@ -865,7 +865,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                 <input type="checkbox" checked={design.show_text} onChange={e => setDes('show_text')(e.target.checked)} style={{ accentColor: '#4263eb', width: 15, height: 15 }} />텍스트 표시
               </label>
             </div>
-            <NumInput label="아이콘 크기" value={design.icon_size} min={12} max={40} step={2} unit="px" recommend={22} onChange={v => setDes('icon_size')(v)} />
+            <NumInput label="아이콘 크기" value={design.icon_size} recommend={22} unit="px" onChange={v => setDes('icon_size')(v)} />
           </div>
         )}
 
@@ -888,22 +888,17 @@ export function CardForm({ mode, card, companies = [] }: Props) {
                   {ANIM_OPTIONS.map(opt => (
                     <label key={opt.type} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: design.animation_type === opt.type ? '#e7f0ff' : '#f8f9fa', border: `1.5px solid ${design.animation_type === opt.type ? '#4263eb' : '#e9ecef'}`, borderRadius: 10, cursor: 'pointer' }}>
                       <input type="radio" name="anim" value={opt.type} checked={design.animation_type === opt.type} onChange={() => setDes('animation_type')(opt.type)} style={{ accentColor: '#4263eb', width: 15, height: 15 }} />
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#212529', margin: 0 }}>{opt.label}</p>
-                        <p style={{ fontSize: 11, color: '#868e96', margin: '1px 0 0' }}>{opt.desc}</p>
-                      </div>
+                      <div><p style={{ fontSize: 13, fontWeight: 600, color: '#212529', margin: 0 }}>{opt.label}</p><p style={{ fontSize: 11, color: '#868e96', margin: '1px 0 0' }}>{opt.desc}</p></div>
                       {design.animation_type === opt.type && <span style={{ marginLeft: 'auto', color: '#4263eb' }}>✓</span>}
                     </label>
                   ))}
                 </div>
-                <p style={{ fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 10 }}>속도</p>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                   {[['slow', '느리게'], ['normal', '보통'], ['fast', '빠르게']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => setDes('animation_speed')(v)}
                       style={{ flex: 1, padding: '10px', border: `1.5px solid ${design.animation_speed === v ? '#4263eb' : '#dee2e6'}`, background: design.animation_speed === v ? '#e7f0ff' : '#fff', borderRadius: 8, fontSize: 12, cursor: 'pointer', fontWeight: design.animation_speed === v ? 700 : 400, color: design.animation_speed === v ? '#4263eb' : '#495057' }}>{l}</button>
                   ))}
                 </div>
-                <p style={{ fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>딜레이</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input type="range" min={0} max={2} step={0.1} value={design.animation_delay ?? 0}
                     onChange={e => setDes('animation_delay')(parseFloat(e.target.value))} style={{ flex: 1, accentColor: '#4263eb' }} />
@@ -917,8 +912,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
         {/* ══ 텍스트·라벨 ══ */}
         {activeTab === 'labels' && (
           <div className="admin-card">
-            <SectionHeader>버튼 텍스트 (전체)</SectionHeader>
-            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 14 }}>비워두면 기본값 사용.</p>
+            <SectionHeader>버튼 텍스트</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
               <Field label="전화 버튼"><input style={I} value={design.labels?.call_btn ?? ''} onChange={e => setLbl('call_btn', e.target.value)} placeholder="전화 문의하기" /></Field>
               <Field label="SMS 버튼"><input style={I} value={design.labels?.sms_btn ?? ''} onChange={e => setLbl('sms_btn', e.target.value)} placeholder="SMS 문의" /></Field>
@@ -929,10 +923,10 @@ export function CardForm({ mode, card, companies = [] }: Props) {
 
             <SectionHeader>메뉴 항목 이름</SectionHeader>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-              <Field label="📋 메뉴 1 이름"><input style={I} value={design.labels?.menu_insurance ?? ''} onChange={e => setLbl('menu_insurance', e.target.value)} placeholder="보험금청구" /></Field>
-              <Field label="🔍 메뉴 2 이름"><input style={I} value={design.labels?.menu_check ?? ''} onChange={e => setLbl('menu_check', e.target.value)} placeholder="내보험조회" /></Field>
-              <Field label="📊 메뉴 3 이름"><input style={I} value={design.labels?.menu_analysis ?? ''} onChange={e => setLbl('menu_analysis', e.target.value)} placeholder="보장분석" /></Field>
-              <Field label="💬 메뉴 4 이름"><input style={I} value={design.labels?.menu_consult ?? ''} onChange={e => setLbl('menu_consult', e.target.value)} placeholder="상담신청" /></Field>
+              <Field label="📋 보험금청구"><input style={I} value={design.labels?.menu_insurance ?? ''} onChange={e => setLbl('menu_insurance', e.target.value)} placeholder="보험금청구" /></Field>
+              <Field label="🔍 내보험조회"><input style={I} value={design.labels?.menu_check ?? ''} onChange={e => setLbl('menu_check', e.target.value)} placeholder="내보험조회" /></Field>
+              <Field label="📊 보장분석"><input style={I} value={design.labels?.menu_analysis ?? ''} onChange={e => setLbl('menu_analysis', e.target.value)} placeholder="보장분석" /></Field>
+              <Field label="💬 상담신청"><input style={I} value={design.labels?.menu_consult ?? ''} onChange={e => setLbl('menu_consult', e.target.value)} placeholder="상담신청" /></Field>
             </div>
 
             <SectionHeader>섹션 제목</SectionHeader>
@@ -941,16 +935,14 @@ export function CardForm({ mode, card, companies = [] }: Props) {
               <Field label="카드뉴스 섹션 제목"><input style={I} value={design.labels?.news_section ?? ''} onChange={e => setLbl('news_section', e.target.value)} placeholder="CARD NEWS" /></Field>
             </div>
 
-            <SectionHeader>하단 정보 라벨 (이모지 / 이미지 / 텍스트 선택)</SectionHeader>
-            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 14 }}>
-              각 항목 앞에 붙는 요소를 이모지·이미지·텍스트 중에서 선택하세요. '없음'을 선택하면 라벨 없이 값만 표시됩니다.
-            </p>
-            <LabelConfigEditor label="📞 전화번호 앞 라벨" value={design.labels?.phone_cfg} onChange={cfg => setLblCfg('phone_cfg', cfg)} cardSlug={f.slug || 'card'} />
-            <LabelConfigEditor label="✉️ 이메일 앞 라벨" value={design.labels?.email_cfg} onChange={cfg => setLblCfg('email_cfg', cfg)} cardSlug={f.slug || 'card'} />
-            <LabelConfigEditor label="📍 주소 앞 라벨" value={design.labels?.address_cfg} onChange={cfg => setLblCfg('address_cfg', cfg)} cardSlug={f.slug || 'card'} />
-            <LabelConfigEditor label="🌐 웹사이트 앞 라벨" value={design.labels?.website_cfg} onChange={cfg => setLblCfg('website_cfg', cfg)} cardSlug={f.slug || 'card'} />
-            <LabelConfigEditor label="📟 내선번호 앞 라벨" value={design.labels?.extension_cfg} onChange={cfg => setLblCfg('extension_cfg', cfg)} cardSlug={f.slug || 'card'} />
-            <LabelConfigEditor label="🖷 팩스 앞 라벨" value={design.labels?.fax_cfg} onChange={cfg => setLblCfg('fax_cfg', cfg)} cardSlug={f.slug || 'card'} />
+            <SectionHeader>하단 정보 라벨 (이모지/이미지/텍스트 선택)</SectionHeader>
+            <p style={{ fontSize: 12, color: '#adb5bd', marginBottom: 14 }}>각 항목 앞 요소를 선택하세요. '없음' = 라벨 없이 값만 표시.</p>
+            <LabelCfgEditor label="📞 전화번호 앞 라벨" value={design.labels?.phone_cfg} onChange={cfg => setLblCfg('phone_cfg', cfg)} cardSlug={f.slug || 'card'} />
+            <LabelCfgEditor label="✉️ 이메일 앞 라벨" value={design.labels?.email_cfg} onChange={cfg => setLblCfg('email_cfg', cfg)} cardSlug={f.slug || 'card'} />
+            <LabelCfgEditor label="📍 주소 앞 라벨" value={design.labels?.address_cfg} onChange={cfg => setLblCfg('address_cfg', cfg)} cardSlug={f.slug || 'card'} />
+            <LabelCfgEditor label="🌐 웹사이트 앞 라벨" value={design.labels?.website_cfg} onChange={cfg => setLblCfg('website_cfg', cfg)} cardSlug={f.slug || 'card'} />
+            <LabelCfgEditor label="📟 내선번호 앞 라벨" value={design.labels?.extension_cfg} onChange={cfg => setLblCfg('extension_cfg', cfg)} cardSlug={f.slug || 'card'} />
+            <LabelCfgEditor label="🖷 팩스 앞 라벨" value={design.labels?.fax_cfg} onChange={cfg => setLblCfg('fax_cfg', cfg)} cardSlug={f.slug || 'card'} />
           </div>
         )}
 
@@ -1008,7 +1000,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
         </button>
       </div>
 
-      {/* 오른쪽: 실시간 미리보기 */}
+      {/* ── 오른쪽 실시간 미리보기 ── */}
       <div>
         <LivePreview f={f} extraLinks={extraLinks} design={design} companies={companies} newsItems={newsItems} />
       </div>

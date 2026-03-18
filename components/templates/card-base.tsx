@@ -1,15 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
 import type {
-  BusinessCard, CardNews, LinkItem,
+  BusinessCard, CardNews, LinkItem, LabelConfig,
   AnimationType, CardDesignOptions, AllLabels
 } from '@/lib/types'
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_LABELS } from '@/lib/types'
 import { ensureHttps, copyToClipboard } from '@/lib/utils'
 
-// ─── 메뉴 아이템 (아이콘만 — 라벨은 AllLabels에서 관리) ─────
 const MENU_ITEMS = [
   { key: 'insurance_claim', defaultLabel: '보험금청구', icon: '📋' },
   { key: 'check_insurance', defaultLabel: '내보험조회', icon: '🔍' },
@@ -28,17 +26,11 @@ const NEWS_CAT: Record<string, { label: string; color: string }> = {
 function getAnimClass(type: AnimationType, on: boolean): string {
   if (!on) return 'anim-none'
   const map: Record<AnimationType, string> = {
-    'zoom-out':     'anim-zoom-out',
-    'fade-in':      'anim-fade-in',
-    'slide-up':     'anim-slide-up',
-    'blur-reveal':  'anim-blur-reveal',
-    'cinematic':    'anim-cinematic',
-    'photo-first':  'anim-photo-first',
-    'text-first':   'anim-text-first',
-    'simultaneous': 'anim-simultaneous',
-    'minimal':      'anim-minimal',
-    'bounce':       'anim-bounce',
-    'none':         'anim-none',
+    'zoom-out': 'anim-zoom-out', 'fade-in': 'anim-fade-in',
+    'slide-up': 'anim-slide-up', 'blur-reveal': 'anim-blur-reveal',
+    'cinematic': 'anim-cinematic', 'photo-first': 'anim-photo-first',
+    'text-first': 'anim-text-first', 'simultaneous': 'anim-simultaneous',
+    'minimal': 'anim-minimal', 'bounce': 'anim-bounce', 'none': 'anim-none',
   }
   return map[type] ?? 'anim-zoom-out'
 }
@@ -51,7 +43,33 @@ function getBtnHeight(s: CardDesignOptions['btn_size']): string {
   return { sm: '44px', md: '52px', lg: '58px' }[s ?? 'md']
 }
 
-// ─── LinkItem 앞에 붙는 요소 렌더링 ─────────────────────────
+// ── LabelConfig 렌더링 (이모지/이미지/텍스트) ────────────────
+function RenderLabelCfg({ cfg, size = 14 }: { cfg?: LabelConfig | null; size?: number }) {
+  if (!cfg || cfg.mode === 'none') return null
+  if (cfg.mode === 'emoji' && cfg.emoji) {
+    return <span style={{ fontSize: size, lineHeight: 1, marginRight: 4 }}>{cfg.emoji}</span>
+  }
+  if (cfg.mode === 'image' && cfg.imageUrl) {
+    return <img src={cfg.imageUrl} alt="" style={{ height: size, width: 'auto', objectFit: 'contain', marginRight: 4 }} />
+  }
+  if (cfg.mode === 'text' && cfg.text) {
+    const ff = cfg.fontFamily === 'serif' ? 'Georgia, serif' : cfg.fontFamily === 'mono' ? 'monospace' : 'inherit'
+    return (
+      <span style={{
+        fontSize: cfg.fontSize ?? 11,
+        fontWeight: cfg.fontWeight === 'bold' ? 700 : 400,
+        fontFamily: ff,
+        marginRight: 4,
+        opacity: 0.8,
+      }}>
+        {cfg.text}
+      </span>
+    )
+  }
+  return null
+}
+
+// ── LinkItem 앞에 붙는 요소 ───────────────────────────────────
 function LinkPrefix({ link, iconSz }: { link: LinkItem; iconSz: number }) {
   const pt = link.prefixType ?? 'none'
   if (pt === 'emoji' && link.prefixEmoji) {
@@ -66,7 +84,7 @@ function LinkPrefix({ link, iconSz }: { link: LinkItem; iconSz: number }) {
   return null
 }
 
-// ─── 공유 버튼 ───────────────────────────────────────────────
+// ── 공유 버튼 ────────────────────────────────────────────────
 function ShareButton({ cardUrl, name }: { cardUrl: string; name: string }) {
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
@@ -104,63 +122,47 @@ function ShareButton({ cardUrl, name }: { cardUrl: string; name: string }) {
   )
 }
 
-// ─── 테마 인터페이스 ─────────────────────────────────────────
 export interface CardTheme {
-  pageBg: string
-  heroBg: string
-  useAfgBg?: boolean
-  customBgUrl?: string       // v5: 커스텀 배경 이미지 URL
-  cardBg: string
-  cardBorder: string
-  textName: string
-  textSub: string
-  textMuted: string
-  accent: string
-  accentBg: string
-  btnPrimary: string
-  btnPrimaryText: string
-  btnSecondary: string
-  btnSecondaryText: string
-  btnSecondaryBorder: string
-  menuBg: string
-  menuBorder: string
-  menuText: string
-  menuActiveBg: string
-  menuActiveBorder: string
-  divider: string
-  labelColor: string
-  footerBg: string
+  pageBg: string; heroBg: string
+  useAfgBg?: boolean; customBgUrl?: string
+  cardBg: string; cardBorder: string
+  textName: string; textSub: string; textMuted: string
+  accent: string; accentBg: string
+  btnPrimary: string; btnPrimaryText: string
+  btnSecondary: string; btnSecondaryText: string; btnSecondaryBorder: string
+  menuBg: string; menuBorder: string; menuText: string
+  menuActiveBg: string; menuActiveBorder: string
+  divider: string; labelColor: string; footerBg: string
 }
 
-// ─── 메인 CardBase ───────────────────────────────────────────
 export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme }) {
   const [heroCollapsed, setHeroCollapsed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // design_options 마이그레이션 (이전 버전 호환)
+  // ── design_options 읽기 (모든 필드 안전하게) ─────────────
   const raw: any = card.design_options ?? {}
   const design: CardDesignOptions = {
     ...DEFAULT_DESIGN_OPTIONS,
-    ...raw,
-    icon_size:         typeof raw.icon_size === 'number'        ? raw.icon_size        : 22,
-    font_size_name:    typeof raw.font_size_name === 'number'   ? raw.font_size_name   : 28,
-    font_size_sub:     typeof raw.font_size_sub === 'number'    ? raw.font_size_sub    : 14,
-    font_size_body:    typeof raw.font_size_body === 'number'   ? raw.font_size_body   : 13,
-    animation_delay:   typeof raw.animation_delay === 'number'  ? raw.animation_delay  : 0,
+    animation_type:     raw.animation_type     ?? DEFAULT_DESIGN_OPTIONS.animation_type,
+    animation_speed:    raw.animation_speed    ?? DEFAULT_DESIGN_OPTIONS.animation_speed,
+    animation_delay:    typeof raw.animation_delay  === 'number' ? raw.animation_delay  : 0,
+    animation_on:       typeof raw.animation_on     === 'boolean' ? raw.animation_on    : true,
+    show_icon:          typeof raw.show_icon         === 'boolean' ? raw.show_icon       : true,
+    show_text:          typeof raw.show_text         === 'boolean' ? raw.show_text       : true,
+    icon_size:          typeof raw.icon_size         === 'number'  ? raw.icon_size       : 22,
+    font_size_name:     typeof raw.font_size_name    === 'number'  ? raw.font_size_name  : 28,
+    font_size_sub:      typeof raw.font_size_sub     === 'number'  ? raw.font_size_sub   : 14,
+    font_size_body:     typeof raw.font_size_body    === 'number'  ? raw.font_size_body  : 13,
+    font_size_team:     typeof raw.font_size_team    === 'number'  ? raw.font_size_team  : 11,
+    logo_height:        typeof raw.logo_height       === 'number'  ? raw.logo_height     : 26,
+    btn_radius:         raw.btn_radius         ?? 'lg',
+    btn_size:           raw.btn_size           ?? 'md',
     profile_position_y: typeof raw.profile_position_y === 'number' ? raw.profile_position_y : 15,
-    labels: raw.labels ?? null,
-    // 이전 contact_labels 호환
-    ...(raw.contact_labels && !raw.labels ? {
-      labels: {
-        phone:   raw.contact_labels.phone   ?? '',
-        email:   raw.contact_labels.email   ?? '',
-        address: raw.contact_labels.address ?? '',
-        website: raw.contact_labels.website ?? '',
-      }
-    } : {}),
+    custom_colors:      raw.custom_colors ?? null,
+    labels:             raw.labels ?? null,
   }
 
-  // labels 병합 (기본값 적용)
+  // labels 병합
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
 
   const animClass  = getAnimClass(design.animation_type, design.animation_on)
@@ -169,7 +171,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   const btnH       = getBtnHeight(design.btn_size)
   const animDelay  = design.animation_delay ? `${design.animation_delay}s` : undefined
 
-  // 커스텀 색상 적용
+  // 커스텀 색상
   const cc: any = design.custom_colors
   const t: CardTheme = cc ? {
     ...theme,
@@ -182,7 +184,12 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
     textSub:    cc.desc_color ?? theme.textSub,
   } : theme
 
-  // 배경 이미지: 회사 배경 > AFG 배경 > 없음
+  // 팀 뱃지 색상
+  const teamBadgeBg   = cc?.team_badge_bg   ?? t.cardBg + 'dd'
+  const teamBadgeText = cc?.team_badge_text ?? t.textSub
+
+  // ── 배경 이미지 결정 ─────────────────────────────────────
+  // 회사 배경 우선, 없으면 AFG 배경, 없으면 null
   const bgImageUrl =
     card.company_background_url ||
     (t.useAfgBg ? '/afg-background.png' : null) ||
@@ -207,19 +214,36 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   const extraLinks: LinkItem[] = Array.isArray(card.extra_links) ? card.extra_links : []
   const siteUrl = typeof window !== 'undefined' ? window.location.href : ''
   const iconSz  = design.icon_size ?? 22
+  const logoH   = design.logo_height ?? 26
+
   const fz = {
     name:  design.font_size_name  ?? 28,
     sub:   design.font_size_sub   ?? 14,
     body:  design.font_size_body  ?? 13,
+    team:  design.font_size_team  ?? 11,
     label: 11 as number,
   }
 
-  // 프로필 이미지 세로 위치 (objectPosition)
   const profilePosY = design.profile_position_y ?? 15
   const objectPos   = `center ${profilePosY}%`
+  const isLightBg   = ['#ffffff', '#faf9f7', '#f5f6f8', '#f4f4f5', '#f0ede8'].includes(t.pageBg)
 
-  // 밝은 배경 여부 (로고 필터용)
-  const isLightBg = ['#ffffff', '#faf9f7', '#f5f6f8', '#f4f4f5', '#f0ede8'].includes(t.pageBg)
+  // ── 하단 라벨 렌더링 헬퍼 ────────────────────────────────
+  function FooterLabel({ cfgKey, fallback }: { cfgKey: keyof typeof lb; fallback?: string }) {
+    const cfgFieldMap: Record<string, keyof typeof lb> = {
+      phone: 'phone_cfg', email: 'email_cfg', address: 'address_cfg',
+      website: 'website_cfg', extension: 'extension_cfg', fax: 'fax_cfg',
+    }
+    const cfgKey2 = cfgFieldMap[cfgKey as string]
+    const cfg = cfgKey2 ? (lb as any)[cfgKey2] as LabelConfig | undefined : undefined
+    if (cfg && cfg.mode !== 'none') {
+      return <RenderLabelCfg cfg={cfg} size={12} />
+    }
+    // 구 방식 fallback
+    const simpleVal = (lb as any)[cfgKey] as string | undefined
+    if (simpleVal) return <span style={{ marginRight: 4 }}>{simpleVal}</span>
+    return null
+  }
 
   return (
     <div
@@ -238,53 +262,42 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
     >
       <ShareButton cardUrl={siteUrl} name={card.name} />
 
-      {/* ── 히어로 영역 ── */}
+      {/* ── 히어로 ── */}
       <div
         className="hero-anim"
         style={{
           position: 'relative',
           width: '100%',
           overflow: 'hidden',
-          background: bgImageUrl ? 'transparent' : t.heroBg,
-          // 모바일 최적화: 스크롤 시 자연스럽게 줄어들되 너무 작아지지 않도록
-          height: heroCollapsed ? '38vw' : '82vw',
-          maxHeight: heroCollapsed ? '180px' : '480px',
-          minHeight: heroCollapsed ? '120px' : '240px',
+          // 모바일 최적화: 히어로 높이
+          height: heroCollapsed ? '36vw' : '80vw',
+          maxHeight: heroCollapsed ? '170px' : '460px',
+          minHeight: heroCollapsed ? '110px' : '220px',
           transition: 'height 0.5s cubic-bezier(0.22,1,0.36,1), max-height 0.5s cubic-bezier(0.22,1,0.36,1)',
+          background: t.heroBg,
         }}
       >
-        {/* 배경 이미지 (회사 배경 또는 AFG 배경) */}
+        {/* ✅ 배경 이미지 — 항상 최하단 zIndex (프로필 사진 뒤) */}
         {bgImageUrl && (
           <div style={{
-            position: 'absolute', inset: 0,
+            position: 'absolute', inset: 0, zIndex: 1,
             backgroundImage: `url(${bgImageUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center 30%',  // 상단 30% — 얼굴 가리지 않게
+            backgroundPosition: 'center 30%',
           }} />
         )}
 
-        {/* 그라디언트 오버레이 — 하단이 페이지 배경색으로 부드럽게 */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 10,
-          background: `linear-gradient(
-            180deg,
-            rgba(0,0,0,0.08) 0%,
-            transparent 25%,
-            transparent 55%,
-            ${t.pageBg}90 78%,
-            ${t.pageBg} 100%
-          )`,
-        }} />
-
-        {/* 프로필 이미지 */}
+        {/* ✅ 프로필 사진 — 배경 위에 zIndex 5 */}
         {card.profile_image_url ? (
-          <Image
+          <img
             src={card.profile_image_url}
             alt={card.name}
-            fill
-            style={{ objectFit: 'cover', objectPosition: objectPos, zIndex: 5 }}
-            priority
-            sizes="480px"
+            style={{
+              position: 'absolute', inset: 0, zIndex: 5,
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              objectPosition: objectPos,
+            }}
           />
         ) : (
           <div style={{
@@ -299,13 +312,32 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
           </div>
         )}
 
+        {/* 그라디언트 오버레이 — 상단 어깨선 아래로만 */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 10,
+          background: `linear-gradient(
+            180deg,
+            rgba(0,0,0,0.04) 0%,
+            transparent 20%,
+            transparent 50%,
+            ${t.pageBg}70 75%,
+            ${t.pageBg} 100%
+          )`,
+          // 모바일: 배경이 어깨선 위로 올라오지 않게
+          backgroundOrigin: 'border-box',
+        }} />
+
         {/* 팀 뱃지 */}
         {card.team_name && (
           <div style={{
-            position: 'absolute', top: 16, left: 16, zIndex: 20,
-            padding: '4px 14px', borderRadius: 20,
-            background: t.cardBg + 'dd', backdropFilter: 'blur(12px)',
-            color: t.textSub, fontSize: 11, fontWeight: 500,
+            position: 'absolute', top: 14, left: 14, zIndex: 20,
+            padding: `4px 12px`,
+            borderRadius: 20,
+            background: teamBadgeBg,
+            backdropFilter: 'blur(12px)',
+            color: teamBadgeText,
+            fontSize: fz.team,
+            fontWeight: 600,
             border: `1px solid ${t.cardBorder}`,
           }}>
             {card.team_name}
@@ -313,40 +345,45 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         )}
       </div>
 
-      {/* ── 본문 콘텐츠 ── */}
-      <div style={{ padding: '0 20px 80px', marginTop: -8 }}>
+      {/* ── 본문 ── */}
+      <div style={{ padding: '0 20px 80px', marginTop: -6 }}>
 
-        {/* 이름 · 직함 */}
+        {/* 이름·직함 영역 */}
         <div className="fade-up-1" style={{ marginBottom: 20 }}>
-          {/* 회사 로고 */}
+
+          {/* ✅ 회사 로고 — <img> 단순 태그로 (흰 네모 제거) */}
           {card.company_logo_url && (
-            <div style={{ marginBottom: 10 }}>
-              <img
-                src={card.company_logo_url}
-                alt={card.company_name}
-                style={{
-                  height: 26, objectFit: 'contain',
-                  filter: isLightBg ? 'none' : 'brightness(0) invert(1)',
-                }}
-              />
-            </div>
+            <img
+              src={card.company_logo_url}
+              alt={card.company_name}
+              style={{
+                display: 'block',
+                height: logoH,
+                width: 'auto',
+                maxWidth: '140px',
+                objectFit: 'contain',
+                marginBottom: 10,
+                filter: isLightBg ? 'none' : 'brightness(0) invert(1)',
+              }}
+            />
           )}
 
           <h1 style={{
             fontSize: fz.name, fontWeight: 700,
             color: t.textName, marginBottom: 4,
             letterSpacing: '-0.025em', lineHeight: 1.2,
+            margin: '0 0 4px',
           }}>
             {card.name}
           </h1>
 
           {card.english_name && (
-            <p style={{ fontSize: fz.sub - 1, color: t.accent, marginBottom: 6, fontWeight: 500 }}>
+            <p style={{ fontSize: Math.max(fz.sub - 1, 10), color: t.accent, marginBottom: 6, fontWeight: 500 }}>
               {card.english_name}
             </p>
           )}
 
-          <p style={{ fontSize: fz.sub, color: t.textSub, lineHeight: 1.5 }}>
+          <p style={{ fontSize: fz.sub, color: t.textSub, lineHeight: 1.5, margin: 0 }}>
             {card.position}
             {card.company_name && (
               <span style={{ color: t.textMuted }}> · {card.company_name}</span>
@@ -357,7 +394,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         {/* 소개 */}
         {card.short_intro && (
           <div className="fade-up-2" style={{ marginBottom: 24, paddingLeft: 14, borderLeft: `2px solid ${t.accent}44` }}>
-            <p style={{ fontSize: fz.body + 1, color: t.textSub, lineHeight: 1.8 }}>
+            <p style={{ fontSize: fz.body + 1, color: t.textSub, lineHeight: 1.8, margin: 0 }}>
               {card.short_intro}
             </p>
           </div>
@@ -374,7 +411,15 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
             {MENU_ITEMS.map(item => {
               const url    = menuUrls[item.key]
               const active = !!url
-              const Tag    = active ? 'a' : 'div'
+              // 라벨 텍스트 — AllLabels에서 커스텀 가능
+              const labelMap: Record<string, string> = {
+                insurance_claim: lb.menu_insurance ?? '보험금청구',
+                check_insurance: lb.menu_check     ?? '내보험조회',
+                analysis:        lb.menu_analysis  ?? '보장분석',
+                consult:         lb.menu_consult   ?? '상담신청',
+              }
+              const displayLabel = labelMap[item.key] ?? item.defaultLabel
+              const Tag = active ? 'a' : 'div'
               return (
                 <Tag
                   key={item.key}
@@ -390,12 +435,10 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
                     transition: 'all 0.2s',
                   }}
                 >
-                  {design.show_icon && (
-                    <span style={{ fontSize: iconSz }}>{item.icon}</span>
-                  )}
+                  {design.show_icon && <span style={{ fontSize: iconSz }}>{item.icon}</span>}
                   {design.show_text && (
                     <span style={{ fontSize: fz.label - 1, color: t.menuText, textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>
-                      {item.defaultLabel}
+                      {displayLabel}
                     </span>
                   )}
                 </Tag>
@@ -404,12 +447,10 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
           </div>
         </div>
 
-        {/* 전화 · SMS 버튼 */}
+        {/* 전화·SMS 버튼 */}
         {card.phone && (
           <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-            <a
-              href={`tel:${card.phone}`}
-              className="touch-btn"
+            <a href={`tel:${card.phone}`} className="touch-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 height: btnH, background: t.btnPrimary, color: t.btnPrimaryText,
@@ -420,9 +461,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
             >
               {lb.call_btn || '전화 문의하기'}
             </a>
-            <a
-              href={`sms:${card.phone}`}
-              className="touch-btn"
+            <a href={`sms:${card.phone}`} className="touch-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 height: btnH, background: t.btnSecondary, color: t.btnSecondaryText,
@@ -436,35 +475,40 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
           </div>
         )}
 
-        {/* 추가 링크 버튼들 */}
+        {/* 추가 링크 버튼 */}
         {extraLinks.length > 0 && (
           <div className="fade-up-5" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
             {extraLinks.filter(l => l.url).map(link => (
               <a
                 key={link.id}
                 href={
-                  link.type === 'email'
-                    ? `mailto:${link.url}`
-                    : ['phone', 'extension', 'fax'].includes(link.type)
-                      ? `tel:${link.url}`
-                      : ensureHttps(link.url)
+                  link.type === 'email' ? `mailto:${link.url}`
+                    : ['phone', 'extension', 'fax'].includes(link.type) ? `tel:${link.url}`
+                    : ensureHttps(link.url)
                 }
                 target={['email', 'phone', 'extension', 'fax', 'sms'].includes(link.type) ? '_self' : '_blank'}
                 rel="noopener noreferrer"
                 className="touch-btn"
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  height: btnH, padding: '0 18px',
+                  minHeight: btnH, padding: '0 18px',
                   background: t.cardBg, border: `1px solid ${t.cardBorder}`,
                   borderRadius: btnRadius, textDecoration: 'none',
                   color: t.textSub, fontSize: fz.body + 1,
                 }}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {/* ✅ 이모지/텍스트/이미지 표시 */}
                   <LinkPrefix link={link} iconSz={iconSz} />
                   <span style={{ fontWeight: 500 }}>{link.label}</span>
+                  {/* ✅ 팩스/내선: 번호도 같이 표시 */}
+                  {(link.type === 'fax' || link.type === 'extension') && link.url && (
+                    <span style={{ fontSize: fz.body, color: t.textMuted, fontWeight: 400 }}>
+                      {link.url}
+                    </span>
+                  )}
                 </span>
-                <span style={{ color: t.textMuted, fontSize: 18 }}>›</span>
+                <span style={{ color: t.textMuted, fontSize: 18, flexShrink: 0 }}>›</span>
               </a>
             ))}
           </div>
@@ -493,18 +537,18 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
                     }}
                   >
                     {news.image_url && (
-                      <div style={{ width: '100%', height: 108, position: 'relative', overflow: 'hidden' }}>
-                        <Image src={news.image_url} alt={news.title} fill style={{ objectFit: 'cover' }} sizes="200px" />
+                      <div style={{ width: '100%', height: 108, overflow: 'hidden' }}>
+                        <img src={news.image_url} alt={news.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     )}
                     <div style={{ padding: 12 }}>
                       <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: cat.color, background: `${cat.color}18`, padding: '2px 8px', borderRadius: 20, marginBottom: 6 }}>
                         {cat.label}
                       </span>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: t.textName, lineHeight: 1.45, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: t.textName, lineHeight: 1.45, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: '0 0 4px' }}>
                         {news.title}
                       </p>
-                      <p style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <p style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0 }}>
                         {news.summary}
                       </p>
                     </div>
@@ -515,11 +559,15 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
           </div>
         )}
 
-        {/* 하단 회사 정보 — 라벨 없이 텍스트만 */}
+        {/* 하단 회사 정보 */}
         <div style={{ padding: 20, background: t.footerBg, border: `1px solid ${t.cardBorder}`, borderRadius: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
             {card.company_logo_url ? (
-              <img src={card.company_logo_url} alt={card.company_name} style={{ height: 30, objectFit: 'contain' }} />
+              <img
+                src={card.company_logo_url}
+                alt={card.company_name}
+                style={{ height: Math.max(logoH - 4, 20), width: 'auto', maxWidth: 100, objectFit: 'contain' }}
+              />
             ) : (
               <div style={{ width: 34, height: 34, borderRadius: 8, background: t.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${t.cardBorder}`, fontSize: 16 }}>
                 🏢
@@ -530,25 +578,29 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
             </p>
           </div>
 
-          <div style={{ paddingTop: 12, borderTop: `1px solid ${t.cardBorder}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <div style={{ paddingTop: 12, borderTop: `1px solid ${t.cardBorder}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {card.address && (
-              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>
-                {lb.address ? `${lb.address} ` : ''}{card.address}
+              <p style={{ fontSize: 12, color: t.textMuted, margin: 0, display: 'flex', alignItems: 'center' }}>
+                <FooterLabel cfgKey="address" />
+                {card.address}
               </p>
             )}
             {card.website_url && (
-              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>
-                {lb.website ? `${lb.website} ` : ''}{card.website_url.replace(/^https?:\/\//, '')}
+              <p style={{ fontSize: 12, color: t.textMuted, margin: 0, display: 'flex', alignItems: 'center' }}>
+                <FooterLabel cfgKey="website" />
+                {card.website_url.replace(/^https?:\/\//, '')}
               </p>
             )}
             {card.phone && (
-              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>
-                {lb.phone ? `${lb.phone} ` : ''}{card.phone}
+              <p style={{ fontSize: 12, color: t.textMuted, margin: 0, display: 'flex', alignItems: 'center' }}>
+                <FooterLabel cfgKey="phone" />
+                {card.phone}
               </p>
             )}
             {card.email && (
-              <p style={{ fontSize: 12, color: t.textMuted, margin: 0 }}>
-                {lb.email ? `${lb.email} ` : ''}{card.email}
+              <p style={{ fontSize: 12, color: t.textMuted, margin: 0, display: 'flex', alignItems: 'center' }}>
+                <FooterLabel cfgKey="email" />
+                {card.email}
               </p>
             )}
           </div>

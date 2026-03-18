@@ -78,12 +78,3 @@ export const TEMPLATES: Record<TemplateKey, TemplateConfig> = {
 
 export const TEMPLATE_LIST = Object.values(TEMPLATES)
 export const DEFAULT_TEMPLATE: TemplateKey = 'afg-dark'
-
-// 색상 추천 시스템
-export const COLOR_RECOMMENDATIONS: Record<string, { compatible: string[]; tip: string }> = {
-  '#000000': { compatible: ['#ffffff', '#f5f5f5', '#d4af37'], tip: '블랙에는 화이트, 실버, 골드가 잘 어울립니다' },
-  '#ffffff': { compatible: ['#000000', '#1a1a1a', '#4263eb'], tip: '화이트에는 블랙, 차콜, 로열블루가 잘 어울립니다' },
-  '#0a0a0a': { compatible: ['#94a3b8', '#3b82f6', '#f8fafc'], tip: '딥블랙에는 슬레이트, 블루, 화이트가 잘 어울립니다' },
-  '#18181b': { compatible: ['#a1a1aa', '#e4e4e7', '#71717a'], tip: '다크그레이에는 실버, 라이트그레이가 잘 어울립니다' },
-  '#0c1220': { compatible: ['#4a9eff', '#7fa8cc', '#f0f4ff'], tip: '네이비에는 스카이블루, 파우더블루, 라이트블루가 잘 어울립니다' },
-}

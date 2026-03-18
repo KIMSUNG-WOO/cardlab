@@ -5,7 +5,7 @@ import type { BusinessCard } from '@/lib/types'
 const AFG_DARK_THEME: CardTheme = {
   pageBg: '#080e18',
   heroBg: '#080e18',
-  useAfgBg: true,
+  useAfgBg: true,          // 회사 배경 없을 때 AFG 기본 배경 사용
   cardBg: '#0d1a2d',
   cardBorder: '#1a2d45',
   textName: '#f0f4ff',
