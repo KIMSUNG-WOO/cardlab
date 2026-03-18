@@ -8,6 +8,8 @@ import type {
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_LABELS } from '@/lib/types'
 import { ensureHttps, copyToClipboard } from '@/lib/utils'
 
+const KAKAO_JS_KEY = 'ec234b7ad8f90acabba0ff14f650a27e'
+
 const MENU_ITEMS = [
   { key: 'insurance_claim', defaultLabel: '보험금청구', icon: '📋' },
   { key: 'check_insurance', defaultLabel: '내보험조회', icon: '🔍' },
@@ -62,23 +64,75 @@ function LinkPrefix({ link, iconSz }: { link: LinkItem; iconSz: number }) {
   return null
 }
 
-function ShareButton({ cardUrl, name }: { cardUrl: string; name: string }) {
+function useKakaoSdk() {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const win = window as any
+    if (win.Kakao?.isInitialized?.()) { setReady(true); return }
+    const script = document.createElement('script')
+    script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js'
+    script.crossOrigin = 'anonymous'
+    script.onload = () => {
+      if (win.Kakao && !win.Kakao.isInitialized()) win.Kakao.init(KAKAO_JS_KEY)
+      setReady(true)
+    }
+    document.head.appendChild(script)
+  }, [])
+  return ready
+}
+
+function ShareButton({ cardUrl, name, profileImageUrl, description }: {
+  cardUrl: string; name: string
+  profileImageUrl?: string | null
+  description?: string | null
+}) {
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
+  const kakaoReady = useKakaoSdk()
+
   async function handleCopy() {
     await copyToClipboard(cardUrl); setCopied(true)
     setTimeout(() => { setCopied(false); setOpen(false) }, 1500)
   }
-  async function handleShare() {
-    if (navigator.share) { try { await navigator.share({ title: name + '의 디지털 명함', url: cardUrl }) } catch {} }
-    else setOpen(v => !v)
+
+  function handleKakaoShare() {
+    const win = window as any
+    if (!win.Kakao?.isInitialized?.()) return
+    win.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: name + '의 디지털 명함',
+        description: description || name + '님의 모바일 명함입니다.',
+        imageUrl: profileImageUrl || 'https://cardlab.digital/og-default.png',
+        link: { mobileWebUrl: cardUrl, webUrl: cardUrl },
+      },
+      buttons: [
+        { title: '모바일 명함 보기', link: { mobileWebUrl: cardUrl, webUrl: cardUrl } },
+      ],
+    })
+    setOpen(false)
   }
+
+  async function handleShare() {
+    if (navigator.share) {
+      try { await navigator.share({ title: name + '의 디지털 명함', url: cardUrl }) } catch {}
+    } else {
+      setOpen(v => !v)
+    }
+  }
+
   return (
     <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}>
       {open && (
-        <div style={{ position: 'absolute', top: 48, right: 0, background: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '8px', minWidth: 160, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+        <div style={{ position: 'absolute', top: 48, right: 0, background: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '8px', minWidth: 170, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+          {kakaoReady && (
+            <button onClick={handleKakaoShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
+              <span style={{ fontSize: 18 }}>💬</span> 카카오톡 공유
+            </button>
+          )}
           <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
-            {copied ? '✅ 복사됨!' : '🔗 링크 복사'}
+            <span style={{ fontSize: 18 }}>{copied ? '✅' : '🔗'}</span> {copied ? '복사됨!' : '링크 복사'}
           </button>
         </div>
       )}
@@ -116,7 +170,6 @@ export interface CardTheme {
   divider: string; labelColor: string; footerBg: string
 }
 
-// ── 공통 헬퍼 (미리보기/실제 명함 동일하게 사용) ──────────────
 export function parseDesign(raw: any): CardDesignOptions {
   return {
     ...DEFAULT_DESIGN_OPTIONS,
@@ -219,9 +272,13 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   const objectPos    = profilePosX + '% ' + profilePosY + '%'
   const profileScale = profileZoom / 100
 
-  const isLightBg      = isLightBackground(t.pageBg)
-  const logoImgStyle   = getLogoStyle(isLightBg, logoH)
+  const isLightBg       = isLightBackground(t.pageBg)
+  const logoImgStyle    = getLogoStyle(isLightBg, logoH)
   const footerLogoStyle = getFooterLogoStyle(isLightBg, logoH)
+
+  const kakaoDesc = card.short_intro
+    ? card.short_intro.slice(0, 60)
+    : card.position + ' · ' + card.company_name
 
   function FooterLabel({ cfgKey }: { cfgKey: string }) {
     const cfgMap: Record<string, string> = {
@@ -258,7 +315,12 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
   return (
     <div ref={scrollRef} className={animClass + ' ' + speedClass}
       style={{ minHeight: '100dvh', maxWidth: 480, margin: '0 auto', background: t.pageBg, overflowY: 'auto', overflowX: 'hidden', position: 'relative', animationDelay: animDelay }}>
-      <ShareButton cardUrl={siteUrl} name={card.name} />
+      <ShareButton
+        cardUrl={siteUrl}
+        name={card.name}
+        profileImageUrl={card.profile_image_url}
+        description={kakaoDesc}
+      />
 
       <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroCollapsed ? '30vw' : '68vw', maxHeight: heroCollapsed ? '140px' : '360px', minHeight: heroCollapsed ? '90px' : '180px', transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
         {bgImageUrl && (
