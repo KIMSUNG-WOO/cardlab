@@ -19,6 +19,7 @@ export function ImageUploader({ value, onChange, cardSlug, bucket = 'card-images
   const previewCanvas = useRef<HTMLCanvasElement>(null)
   const naturalImg = useRef<HTMLImageElement | null>(null)
   const dragRef = useRef<{ type: DragType; sx: number; sy: number; sc: Crop } | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   const [uploading, setUploading] = useState(false)
   const [rawPreview, setRawPreview] = useState<string | null>(null)
@@ -42,7 +43,8 @@ export function ImageUploader({ value, onChange, cardSlug, bucket = 'card-images
 
   function draw(img: HTMLImageElement) {
     const cv = previewCanvas.current; if (!cv) return
-    const W = canvasSize.w, H = canvasSize.h
+    const W = containerRef.current ? containerRef.current.offsetWidth : 380
+    const H = Math.round(W * 1.1)
     cv.width = W; cv.height = H
     const ctx = cv.getContext('2d')!
     const sc = Math.min(W / img.naturalWidth, H / img.naturalHeight)
@@ -185,7 +187,7 @@ export function ImageUploader({ value, onChange, cardSlug, bucket = 'card-images
           </div>
           <div
             style={{ position: 'relative', width: '100%', marginBottom: 14, borderRadius: 10, overflow: 'hidden', userSelect: 'none', background: '#000' }}
-            ref={el => { if (el) setCanvasSize({ w: el.offsetWidth, h: Math.round(el.offsetWidth * 1.1) }) }}
+            ref={containerRef}
           >
             <canvas ref={previewCanvas}
               style={{ display: 'block', width: '100%', height: 'auto', touchAction: 'none', cursor: 'crosshair' }}
