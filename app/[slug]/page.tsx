@@ -24,17 +24,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!data) return { title: '명함을 찾을 수 없습니다' }
 
-  const name     = data.name
-  const position = data.position
-  const company  = data.company_name
-  const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cardlab.digital'
-  const pageUrl  = siteUrl + '/' + slug
-  const ogTitle  = name + ' | ' + position
-  const shortDesc = data.short_intro ? data.short_intro.slice(0, 60) : position + ' · ' + company
-  const ogDesc   = company + '\n' + shortDesc + '\n\n📱 모바일 명함 보기'
+  const name      = data.name
+  const position  = data.position
+  const company   = data.company_name
+  const siteUrl   = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cardlab.digital'
+  const pageUrl   = `${siteUrl}/${slug}`
+
+  // 카카오톡 공유 최적화
+  // og:title — 짧고 임팩트 있게 (카카오는 30자 내외 권장)
+  const ogTitle = `${name} - ${position}`
+
+  // og:description — 회사명 + 소개 + CTA
+  const shortDesc = data.short_intro
+    ? data.short_intro.slice(0, 50)
+    : `${position} | ${company}`
+  const ogDesc = `${company}\n${shortDesc}\n\n📱 모바일 명함 보기`
 
   return {
-    title: name + ' - ' + position + ' / ' + company,
+    title: `${name} - ${position} / ${company}`,
     description: ogDesc,
     icons: {
       icon: '/icons/favicon.svg',
@@ -49,13 +56,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'profile',
       locale: 'ko_KR',
       images: data.profile_image_url
-        ? [{ url: data.profile_image_url, width: 800, height: 800, alt: name + ' 프로필' }]
-        : [{ url: siteUrl + '/og-default.png', width: 1200, height: 630, alt: 'CardLab 디지털 명함' }],
+        ? [
+            {
+              url: data.profile_image_url,
+              width: 800,
+              height: 800,
+              alt: `${name} - ${position} | ${company}`,
+            },
+          ]
+        : [
+            {
+              url: `${siteUrl}/og-default.png`,
+              width: 1200,
+              height: 630,
+              alt: 'CardLab 디지털 명함',
+            },
+          ],
     },
     twitter: {
       card: 'summary_large_image',
       title: ogTitle,
-      description: company + ' · ' + shortDesc,
+      description: ogDesc,
       images: data.profile_image_url ? [data.profile_image_url] : [],
     },
     alternates: { canonical: pageUrl },
