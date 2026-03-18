@@ -96,9 +96,7 @@ function ShareButton({ cardUrl, name, profileImageUrl, description, position, co
   function handleKakaoShare() {
     const win = window as any
     if (!win.Kakao?.isInitialized?.()) return
-    // title: 이름 - 직함 (짧게)
     const titleStr = name + ' - ' + (position || '')
-    // description: 회사명 + 소개문구 (각 줄 앞에 — 붙여서 깔끔하게)
     const descLines = [
       company ? '—' + company : '',
       description ? '—' + description : '',

@@ -216,7 +216,8 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
     (['afg-dark', 'afg-light'].includes(f.template_key) ? '/afg-background.png' : null)
   const logoUrl = f.company_logo_url || selectedCompany?.logo_url || null
 
-  const btnR = { none: '0', sm: '4px', md: '8px', lg: '10px', full: '9999px' }[design.btn_radius || 'lg']
+  // 실제 명함과 동일한 값
+  const btnR = { none: '0', sm: '6px', md: '12px', lg: '16px', full: '9999px' }[design.btn_radius || 'lg']
   const btnH = { sm: '40px', md: '46px', lg: '52px' }[design.btn_size || 'md']
 
   const fzName  = design.font_size_name  ?? 28
@@ -231,9 +232,9 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
   const profileScale = profileZoom / 100
   const objectPos = `${profileX}% ${profileY}%`
 
-  // 로고 스타일 — card-base.tsx 공통 함수 사용 (미리보기/실제 동일)
-  const previewLogoStyle = getLogoStyle(isLightBg, logoH)
-  const previewFooterLogoStyle = getFooterLogoStyle(isLightBg, logoH)
+  // 실제 명함과 동일한 공통 함수
+  const logoImgStyle    = getLogoStyle(isLightBg, logoH)
+  const footerLogoStyle = getFooterLogoStyle(isLightBg, logoH)
 
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
 
@@ -243,30 +244,31 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
       website: 'website_cfg', extension: 'extension_cfg', fax: 'fax_cfg',
     }
     const cfg = (lb as any)[cfgMap[cfgKey]] as LabelConfig | undefined
-    if (cfg && cfg.mode === 'emoji' && cfg.emoji) return <span style={{ fontSize: 11, marginRight: 3 }}>{cfg.emoji}</span>
-    if (cfg && cfg.mode === 'text' && cfg.text) return <span style={{ fontSize: 10, marginRight: 3, opacity: 0.8 }}>{cfg.text}</span>
+    if (cfg && cfg.mode === 'emoji' && cfg.emoji) return <span style={{ fontSize: 13, marginRight: 5 }}>{cfg.emoji}</span>
+    if (cfg && cfg.mode === 'text' && cfg.text) return <span style={{ fontSize: 11, marginRight: 5, opacity: 0.8 }}>{cfg.text}</span>
     const simple = (lb as any)[cfgKey] as string | undefined
-    if (simple) return <span style={{ marginRight: 3 }}>{simple}</span>
+    if (simple) return <span style={{ marginRight: 5 }}>{simple}</span>
     return null
   }
 
   const rowStylePreview: React.CSSProperties = {
-    fontSize: 10, color: textMuted, margin: 0, padding: '7px 0',
+    fontSize: 13, color: textMuted, margin: 0, padding: '10px 0',
     display: 'flex', alignItems: 'flex-start',
-    borderBottom: `1px solid ${border}44`, lineHeight: 1.5,
+    borderBottom: `1px solid ${border}33`,
+    lineHeight: 1.5, textDecoration: 'none',
   }
 
   return (
-    <div style={{ position: 'sticky', top: 20 }}>
+    <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', letterSpacing: '0.1em', margin: 0 }}>LIVE PREVIEW</p>
         <p style={{ fontSize: 10, color: '#9ca3af', margin: 0 }}>실제 명함과 동일</p>
       </div>
 
-      <div style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.15)', maxHeight: '92vh', overflowY: 'auto' }}>
+      <div style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh', overflowY: 'auto' }}>
 
-        {/* 히어로 — 실제 명함(68vw)과 동일 비율 */}
-        <div style={{ position: 'relative', height: '68vw', maxHeight: 360, minHeight: 180, overflow: 'hidden', background: pageBg }}>
+        {/* 히어로 — 실제 명함과 동일한 비율 (68vw/360px/180px) */}
+        <div style={{ position: 'relative', width: '100%', overflow: 'hidden', height: '68vw', maxHeight: 360, minHeight: 180, background: pageBg }}>
           {bgImageUrl && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
           )}
@@ -278,34 +280,38 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           ) : (
             <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: 70, height: 70, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>👤</div>
+              <div style={{ width: 88, height: 88, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
             </div>
           )}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg,rgba(0,0,0,0.02) 0%,transparent 15%,transparent 48%,${pageBg}55 72%,${pageBg} 100%)` }} />
+          <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ${pageBg}55 72%, ${pageBg} 100%)` }} />
           {f.team_name && (
-            <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fzTeam, padding: '3px 10px', borderRadius: 20, fontWeight: 600, border: `1px solid ${border}` }}>
+            <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fzTeam, fontWeight: 600, border: `1px solid ${border}` }}>
               {f.team_name}
             </div>
           )}
         </div>
 
-        {/* 본문 */}
-        <div style={{ padding: '0 18px 20px', marginTop: -4 }}>
-          {/* 로고 — getLogoStyle 공통 함수 (실제 명함과 동일) */}
-          {logoUrl && (
-            <img src={logoUrl} alt="" style={previewLogoStyle}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          )}
-          {f.name && <h1 style={{ fontSize: fzName, fontWeight: 700, color: textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{f.name}</h1>}
-          {f.english_name && <p style={{ fontSize: Math.max(fzSub - 1, 10), color: accent, margin: '0 0 4px', fontWeight: 500 }}>{f.english_name}</p>}
-          {f.position && <p style={{ fontSize: fzSub, color: textSub, margin: 0, lineHeight: 1.5 }}>{f.position}{f.company_name && <span style={{ color: textMuted }}> · {f.company_name}</span>}</p>}
+        {/* 본문 — 실제 명함과 동일한 padding/marginTop */}
+        <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
+
+          {/* 이름 위 로고 — getLogoStyle 공통 함수 사용 (mixBlendMode 동일) */}
+          <div style={{ marginBottom: 16 }}>
+            {logoUrl && (
+              <img src={logoUrl} alt="" style={logoImgStyle}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            )}
+            {f.name && <h1 style={{ fontSize: fzName, fontWeight: 700, color: textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{f.name}</h1>}
+            {f.english_name && <p style={{ fontSize: Math.max(fzSub - 1, 10), color: accent, margin: '0 0 4px', fontWeight: 500 }}>{f.english_name}</p>}
+            {f.position && <p style={{ fontSize: fzSub, color: textSub, lineHeight: 1.5, margin: 0 }}>{f.position}{f.company_name && <span style={{ color: textMuted }}> · {f.company_name}</span>}</p>}
+          </div>
 
           {f.short_intro && (
-            <div style={{ margin: '10px 0 18px', paddingLeft: 12, borderLeft: `2px solid ${accent}44` }}>
+            <div style={{ marginBottom: 18, paddingLeft: 12, borderLeft: `2px solid ${accent}44` }}>
               <p style={{ fontSize: fzBody + 1, color: textSub, lineHeight: 1.8, margin: 0 }}>{f.short_intro}</p>
             </div>
           )}
 
+          {/* 메뉴 — 실제 명함과 동일 */}
           <div style={{ marginBottom: 16 }}>
             {lb.menu_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 9 }}>{lb.menu_section}</p>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
@@ -319,44 +325,48 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
                 return (
                   <div key={item.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 3px', borderRadius: 10, background: active ? menuActiveBg : (isLight ? '#f8f9fa' : 'rgba(255,255,255,0.05)'), border: `1px solid ${active ? accent + '40' : border}`, opacity: active ? 1 : 0.4 }}>
                     {design.show_icon && <span style={{ fontSize: iconSz }}>{item.icon}</span>}
-                    {design.show_text && <span style={{ fontSize: fzBody - 1, color: isLight ? '#495057' : '#94a3b8', textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>{item.label}</span>}
+                    {design.show_text && <span style={{ fontSize: 10, color: isLight ? '#495057' : '#94a3b8', textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>{item.label}</span>}
                   </div>
                 )
               })}
             </div>
           </div>
 
+          {/* CTA 버튼 — 실제 명함과 동일 */}
           {f.phone && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
-              <div style={{ height: btnH, background: btnColor, borderRadius: btnR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fzBody, color: '#fff', fontWeight: 700 }}>{lb.call_btn || '전화 문의하기'}</div>
-              <div style={{ height: btnH, background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fzBody, color: textSub }}>{lb.sms_btn || 'SMS 문의'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: btnColor, color: '#fff', borderRadius: btnR, fontSize: fzBody, fontWeight: 700 }}>{lb.call_btn || '전화 문의하기'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, fontSize: fzBody, color: textSub, fontWeight: 600 }}>{lb.sms_btn || 'SMS 문의'}</div>
             </div>
           )}
 
+          {/* 추가 링크 — 실제 명함과 동일 */}
           {extraLinks.filter(l => l.url).map(link => (
             <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 6, color: textSub, fontSize: fzBody }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {link.prefixType === 'emoji' && link.prefixEmoji && <span style={{ fontSize: iconSz }}>{link.prefixEmoji}</span>}
-                {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto' }} />}
-                {link.prefixType === 'text' && link.prefixText && <span style={{ fontSize: 11, opacity: 0.7 }}>{link.prefixText}</span>}
+                {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto', objectFit: 'contain' }} />}
+                {link.prefixType === 'text' && link.prefixText && <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.7, whiteSpace: 'nowrap' }}>{link.prefixText}</span>}
                 <span style={{ fontWeight: 500 }}>{link.label}</span>
                 {(link.type === 'fax' || link.type === 'extension') && link.url && (
                   <span style={{ fontSize: fzBody - 1, color: textMuted }}>{link.url}</span>
                 )}
               </span>
-              <span style={{ opacity: 0.4, fontSize: 16, flexShrink: 0 }}>›</span>
+              <span style={{ color: textMuted, fontSize: 16, flexShrink: 0 }}>›</span>
             </div>
           ))}
 
+          {/* 카드뉴스 — 실제 명함과 동일 */}
           {newsItems.filter((n: any) => n.title?.trim()).length > 0 && (
             <div style={{ marginBottom: 20 }}>
               {lb.news_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 11 }}>{lb.news_section}</p>}
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
                 {newsItems.filter((n: any) => n.title?.trim()).slice(0, 3).map((news: any, i: number) => (
                   <div key={i} style={{ flexShrink: 0, width: 185, background: cardBg, border: `1px solid ${border}`, borderRadius: 13, overflow: 'hidden' }}>
-                    {news.image_url && <div style={{ height: 98, backgroundImage: `url(${news.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
+                    {news.image_url && <div style={{ width: '100%', height: 98, overflow: 'hidden' }}><img src={news.image_url} alt={news.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>}
                     <div style={{ padding: 10 }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: textName, margin: 0, lineHeight: 1.4 }}>{news.title.slice(0, 22)}{news.title.length > 22 ? '...' : ''}</p>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: textName, margin: '0 0 3px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.title}</p>
+                      <p style={{ fontSize: 10, color: textMuted, lineHeight: 1.4, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.summary}</p>
                     </div>
                   </div>
                 ))}
@@ -364,21 +374,47 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
+          {/* 하단 푸터 — 실제 명함과 동일한 getFooterLogoStyle 사용 */}
           <div style={{ padding: '14px 16px', background: footerBg, border: `1px solid ${border}`, borderRadius: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               {logoUrl
-                ? <img src={logoUrl} alt="" style={previewFooterLogoStyle} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                : <div style={{ width: 28, height: 28, borderRadius: 6, background: cardBg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏢</div>
+                ? <img src={logoUrl} alt="" style={footerLogoStyle} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                : <div style={{ width: 28, height: 28, borderRadius: 6, background: cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${border}`, fontSize: 13 }}>🏢</div>
               }
               {f.company_name && <p style={{ fontSize: fzBody + 1, fontWeight: 700, color: textName, margin: 0 }}>{f.company_name}</p>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {f.address     && <p style={rowStylePreview}><PreviewLabel cfgKey="address" /><span style={{ flex: 1 }}>{f.address}</span><span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>지도 ›</span></p>}
-              {f.website_url && <p style={rowStylePreview}><PreviewLabel cfgKey="website" /><span style={{ flex: 1 }}>{f.website_url.replace(/^https?:\/\//, '')}</span><span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>열기 ›</span></p>}
-              {f.phone       && <p style={rowStylePreview}><PreviewLabel cfgKey="phone" /><span style={{ flex: 1 }}>{f.phone}</span><span style={{ fontSize: 11, color: textMuted, marginLeft: 6, flexShrink: 0 }}>탭=복사</span></p>}
-              {f.email       && <p style={{ ...rowStylePreview, borderBottom: 'none' }}><PreviewLabel cfgKey="email" /><span style={{ flex: 1 }}>{f.email}</span><span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>메일 ›</span></p>}
+              {f.address && (
+                <div style={rowStylePreview}>
+                  <PreviewLabel cfgKey="address" />
+                  <span style={{ flex: 1 }}>{f.address}</span>
+                  <span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>지도 ›</span>
+                </div>
+              )}
+              {f.website_url && (
+                <div style={rowStylePreview}>
+                  <PreviewLabel cfgKey="website" />
+                  <span style={{ flex: 1 }}>{f.website_url.replace(/^https?:\/\//, '')}</span>
+                  <span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>열기 ›</span>
+                </div>
+              )}
+              {f.phone && (
+                <div style={rowStylePreview}>
+                  <PreviewLabel cfgKey="phone" />
+                  <span style={{ flex: 1 }}>{f.phone}</span>
+                  <span style={{ fontSize: 10, opacity: 0.45, marginLeft: 2 }}>탭하여 복사</span>
+                </div>
+              )}
+              {f.email && (
+                <div style={{ ...rowStylePreview, borderBottom: 'none' }}>
+                  <PreviewLabel cfgKey="email" />
+                  <span style={{ flex: 1 }}>{f.email}</span>
+                  <span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>메일 ›</span>
+                </div>
+              )}
             </div>
           </div>
+          <div style={{ height: 24 }} />
         </div>
       </div>
 
@@ -386,8 +422,7 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
         <span>이름 {design.font_size_name}px</span>
         <span>팀 {design.font_size_team}px</span>
         <span>로고 {design.logo_height}px</span>
-        <span>줌 {(design as any).profile_zoom ?? 100}%</span>
-        <span>Y:{design.profile_position_y ?? 15}% X:{(design as any).profile_position_x ?? 50}%</span>
+        <span>본문 {design.font_size_body}px</span>
         <span>{TEMPLATES[f.template_key as TemplateKey]?.label ?? f.template_key}</span>
       </div>
     </div>
@@ -1018,7 +1053,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
         </button>
       </div>
 
-      {/* 오른쪽 미리보기 — sticky로 스크롤 따라오게 */}
+      {/* 오른쪽 미리보기 — 460px, sticky */}
       <div style={{ position: 'sticky', top: 20, alignSelf: 'start' }}>
         <LivePreview f={f} extraLinks={extraLinks} design={design} companies={companies} newsItems={newsItems} />
       </div>
