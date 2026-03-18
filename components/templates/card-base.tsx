@@ -9,7 +9,6 @@ import { DEFAULT_DESIGN_OPTIONS, DEFAULT_LABELS } from '@/lib/types'
 import { ensureHttps, copyToClipboard } from '@/lib/utils'
 
 const KAKAO_JS_KEY = 'ec234b7ad8f90acabba0ff14f650a27e'
-const CARDLAB_CHANNEL_ID = '_RwpxhX'
 
 const MENU_ITEMS = [
   { key: 'insurance_claim', defaultLabel: '보험금청구', icon: '📋' },
@@ -83,34 +82,40 @@ function useKakaoSdk() {
   return ready
 }
 
-function ShareButton({ cardUrl, name, profileImageUrl, description }: {
+function ShareButton({ cardUrl, name, profileImageUrl, description, position, company }: {
   cardUrl: string; name: string
   profileImageUrl?: string | null
   description?: string | null
+  position?: string | null
+  company?: string | null
 }) {
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
   const kakaoReady = useKakaoSdk()
 
-  async function handleCopy() {
-    await copyToClipboard(cardUrl); setCopied(true)
-    setTimeout(() => { setCopied(false); setOpen(false) }, 1500)
-  }
-
   function handleKakaoShare() {
     const win = window as any
     if (!win.Kakao?.isInitialized?.()) return
+    const titleStr = name + ' - ' + (position || '') + ' / ' + (company || '')
+    const descLines = [
+      position && company ? '—' + position + ' / ' + company : '',
+      description ? '—' + description : '',
+    ].filter(Boolean).join('\n')
     win.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
-        title: name + '의 디지털 명함',
-        description: description || name + '님의 모바일 명함입니다.',
+        title: titleStr,
+        description: descLines,
         imageUrl: profileImageUrl || 'https://cardlab.digital/og-default.png',
         link: { mobileWebUrl: cardUrl, webUrl: cardUrl },
       },
+      social: {
+        likeCount: 17452,
+        commentCount: 13201,
+        sharedCount: 14839,
+      },
       buttons: [
         { title: '모바일 명함 보기', link: { mobileWebUrl: cardUrl, webUrl: cardUrl } },
-        { title: '채널 추가하기', link: { mobileWebUrl: 'https://pf.kakao.com/' + CARDLAB_CHANNEL_ID, webUrl: 'https://pf.kakao.com/' + CARDLAB_CHANNEL_ID } },
       ],
     })
     setOpen(false)
@@ -327,6 +332,8 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         name={card.name}
         profileImageUrl={card.profile_image_url}
         description={kakaoDesc}
+        position={card.position}
+        company={card.company_name}
       />
 
       <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroCollapsed ? '30vw' : '68vw', maxHeight: heroCollapsed ? '140px' : '360px', minHeight: heroCollapsed ? '90px' : '180px', transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
