@@ -108,11 +108,6 @@ function ShareButton({ cardUrl, name, profileImageUrl, description }: {
         imageUrl: profileImageUrl || 'https://cardlab.digital/og-default.png',
         link: { mobileWebUrl: cardUrl, webUrl: cardUrl },
       },
-      social: {
-        likeCount: undefined,
-        commentCount: undefined,
-        sharedCount: undefined,
-      },
       buttons: [
         { title: '모바일 명함 보기', link: { mobileWebUrl: cardUrl, webUrl: cardUrl } },
         { title: '채널 추가하기', link: { mobileWebUrl: 'https://pf.kakao.com/' + CARDLAB_CHANNEL_ID, webUrl: 'https://pf.kakao.com/' + CARDLAB_CHANNEL_ID } },
@@ -134,17 +129,19 @@ function ShareButton({ cardUrl, name, profileImageUrl, description }: {
   return (
     <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}>
       {open && (
-        <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />
-        <div style={{ position: 'absolute', top: 48, right: 0, background: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '8px', minWidth: 170, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-          {kakaoReady && (
-            <button onClick={handleKakaoShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: '#FEE500', color: '#3C1E1E', fontWeight: 700, fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
-              <span style={{ fontSize: 18 }}>💬</span> 카카오톡 공유
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />
+          <div style={{ position: 'absolute', top: 48, right: 0, background: 'rgba(20,20,20,0.97)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '6px', minWidth: 180, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            {kakaoReady && (
+              <button onClick={handleKakaoShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 14px', background: '#FEE500', border: 'none', color: '#3C1E1E', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 10, marginBottom: 5 }}>
+                <span style={{ fontSize: 18 }}>💬</span> 카카오톡 공유
+              </button>
+            )}
+            <button onClick={handleNativeShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', borderRadius: 10 }}>
+              <span style={{ fontSize: 18 }}>{copied ? '✅' : '🔗'}</span> {copied ? '복사됨!' : '링크 복사'}
             </button>
-          )}
-          <button onClick={handleNativeShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
-            <span style={{ fontSize: 18 }}>{copied ? '✅' : '🔗'}</span> {copied ? '복사됨!' : '링크 복사'}
-          </button>
-        </div>
+          </div>
+        </>
       )}
       <button className="share-btn" onClick={() => setOpen(v => !v)} aria-label="공유">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
