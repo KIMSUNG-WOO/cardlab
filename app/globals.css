@@ -169,3 +169,22 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── 모바일 최적화 (max-width: 480px) ────────────
+   배경이 얼굴에 가려지지 않고, 첫 화면에 핵심 정보
+   최대 노출, 버튼/패딩/간격 압축
+─────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* 히어로 영역 높이 축소 — 배경이 충분히 보이도록 */
+  .hero-anim {
+    height: 52vw !important;
+    max-height: 260px !important;
+    min-height: 140px !important;
+  }
+
+  /* 배경 이미지 position 고정 — 위로 올라가는 현상 방지 */
+  .hero-anim > div[style*="backgroundImage"] {
+    background-attachment: scroll !important;
+    background-position: center 30% !important;
+  }
+}

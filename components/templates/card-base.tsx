@@ -82,6 +82,17 @@ function useKakaoSdk() {
   return ready
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 480)
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
 function ShareButton({ cardUrl, name, profileImageUrl, description, position, company }: {
   cardUrl: string; name: string
   profileImageUrl?: string | null
@@ -226,6 +237,7 @@ export function getFooterLogoStyle(isLightBg: boolean, logoH: number): React.CSS
 export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme }) {
   const [heroCollapsed, setHeroCollapsed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   const design = parseDesign(card.design_options)
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
@@ -292,6 +304,23 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
     ? card.short_intro.slice(0, 60)
     : card.position + ' · ' + card.company_name
 
+  // 모바일/데스크톱 분기값
+  const heroH         = isMobile ? (heroCollapsed ? '22vw'  : '52vw')  : (heroCollapsed ? '30vw'  : '68vw')
+  const heroMaxH      = isMobile ? (heroCollapsed ? '110px' : '260px') : (heroCollapsed ? '140px' : '360px')
+  const heroMinH      = isMobile ? (heroCollapsed ? '70px'  : '140px') : (heroCollapsed ? '90px'  : '180px')
+  const bodyPadding   = isMobile ? '0 14px 60px' : '0 18px 80px'
+  const bodyMarginTop = isMobile ? -8 : -4
+  const mb1           = isMobile ? 8  : 16
+  const mb2           = isMobile ? 8  : 18
+  const mb3           = isMobile ? 10 : 16
+  const ctaGap        = isMobile ? 5  : 7
+  const ctaMb         = isMobile ? 5  : 7
+  const linkGap       = isMobile ? 4  : 6
+  const linkMb        = isMobile ? 10 : 18
+  const btnHMobile    = isMobile ? '38px' : btnH
+  const menuPad       = isMobile ? '8px 3px' : '10px 3px'
+  const menuGap       = isMobile ? 4 : 5
+
   function FooterLabel({ cfgKey }: { cfgKey: string }) {
     const cfgMap: Record<string, string> = {
       phone: 'phone_cfg', email: 'email_cfg', address: 'address_cfg',
@@ -336,7 +365,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         company={card.company_name}
       />
 
-      <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroCollapsed ? '30vw' : '68vw', maxHeight: heroCollapsed ? '140px' : '360px', minHeight: heroCollapsed ? '90px' : '180px', transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
+      <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: heroH, maxHeight: heroMaxH, minHeight: heroMinH, transition: 'height 0.4s cubic-bezier(0.22,1,0.36,1), max-height 0.4s cubic-bezier(0.22,1,0.36,1)', background: t.heroBg }}>
         {bgImageUrl && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: 'url(' + bgImageUrl + ')', backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
         )}
@@ -358,8 +387,8 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         )}
       </div>
 
-      <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
-        <div className="fade-up-1" style={{ marginBottom: 16 }}>
+      <div style={{ padding: bodyPadding, marginTop: bodyMarginTop }}>
+        <div className="fade-up-1" style={{ marginBottom: mb1 }}>
           {card.company_logo_url && <img src={card.company_logo_url} alt={card.company_name} style={logoImgStyle} />}
           <h1 style={{ fontSize: fz.name, fontWeight: 700, color: t.textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{card.name}</h1>
           {card.english_name && <p style={{ fontSize: Math.max(fz.sub - 1, 10), color: t.accent, margin: '0 0 4px', fontWeight: 500 }}>{card.english_name}</p>}
@@ -369,12 +398,12 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         </div>
 
         {card.short_intro && (
-          <div className="fade-up-2" style={{ marginBottom: 18, paddingLeft: 12, borderLeft: '2px solid ' + t.accent + '44' }}>
+          <div className="fade-up-2" style={{ marginBottom: mb2, paddingLeft: 12, borderLeft: '2px solid ' + t.accent + '44' }}>
             <p style={{ fontSize: fz.body + 1, color: t.textSub, lineHeight: 1.8, margin: 0 }}>{card.short_intro}</p>
           </div>
         )}
 
-        <div className="fade-up-3" style={{ marginBottom: 16 }}>
+        <div className="fade-up-3" style={{ marginBottom: mb3 }}>
           {lb.menu_section && <p style={{ fontSize: fz.label, fontWeight: 700, color: t.labelColor, letterSpacing: '0.18em', marginBottom: 9 }}>{lb.menu_section}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
             {MENU_ITEMS.map(item => {
@@ -388,7 +417,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
               const Tag = active ? 'a' : 'div'
               return (
                 <Tag key={item.key} {...(active ? { href: ensureHttps(url!), target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 3px', borderRadius: 10, background: active ? t.menuActiveBg : t.menuBg, border: '1px solid ' + (active ? t.menuActiveBorder : t.menuBorder), textDecoration: 'none', cursor: active ? 'pointer' : 'default', opacity: active ? 1 : 0.4 }}>
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: menuGap, padding: menuPad, borderRadius: 10, background: active ? t.menuActiveBg : t.menuBg, border: '1px solid ' + (active ? t.menuActiveBorder : t.menuBorder), textDecoration: 'none', cursor: active ? 'pointer' : 'default', opacity: active ? 1 : 0.4 }}>
                   {design.show_icon && <span style={{ fontSize: iconSz }}>{item.icon}</span>}
                   {design.show_text && <span style={{ fontSize: fz.label - 1, color: t.menuText, textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>{labelMap[item.key]}</span>}
                 </Tag>
@@ -398,25 +427,25 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
         </div>
 
         {card.phone && (
-          <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
+          <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: ctaGap, marginBottom: ctaMb }}>
             <a href={'tel:' + card.phone} className="touch-btn"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: t.btnPrimary, color: t.btnPrimaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 700, boxShadow: '0 4px 16px ' + t.accent + '33' }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnHMobile, background: t.btnPrimary, color: t.btnPrimaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 700, boxShadow: '0 4px 16px ' + t.accent + '33' }}>
               {lb.call_btn || '전화 문의하기'}
             </a>
             <a href={'sms:' + card.phone} className="touch-btn"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: t.btnSecondary, color: t.btnSecondaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 600, border: '1px solid ' + t.btnSecondaryBorder }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnHMobile, background: t.btnSecondary, color: t.btnSecondaryText, borderRadius: btnRadius, textDecoration: 'none', fontSize: fz.body, fontWeight: 600, border: '1px solid ' + t.btnSecondaryBorder }}>
               {lb.sms_btn || 'SMS 문의'}
             </a>
           </div>
         )}
 
         {extraLinks.length > 0 && (
-          <div className="fade-up-5" style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
+          <div className="fade-up-5" style={{ display: 'flex', flexDirection: 'column', gap: linkGap, marginBottom: linkMb }}>
             {extraLinks.filter(l => l.url).map(link => (
               <a key={link.id} href={getLinkHref(link)}
                 target={['email', 'phone', 'extension', 'fax', 'sms'].includes(link.type) ? '_self' : '_blank'}
                 rel="noopener noreferrer" className="touch-btn"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: t.cardBg, border: '1px solid ' + t.cardBorder, borderRadius: btnRadius, textDecoration: 'none', color: t.textSub, fontSize: fz.body }}>
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnHMobile, padding: '0 15px', background: t.cardBg, border: '1px solid ' + t.cardBorder, borderRadius: btnRadius, textDecoration: 'none', color: t.textSub, fontSize: fz.body }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <LinkPrefix link={link} iconSz={iconSz} />
                   <span style={{ fontWeight: 500 }}>{link.label}</span>
