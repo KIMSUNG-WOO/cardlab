@@ -9,6 +9,7 @@ import { DEFAULT_DESIGN_OPTIONS, DEFAULT_LABELS } from '@/lib/types'
 import { ensureHttps, copyToClipboard } from '@/lib/utils'
 
 const KAKAO_JS_KEY = 'ec234b7ad8f90acabba0ff14f650a27e'
+const CARDLAB_CHANNEL_ID = '_RwpxhX'
 
 const MENU_ITEMS = [
   { key: 'insurance_claim', defaultLabel: '보험금청구', icon: '📋' },
@@ -107,8 +108,14 @@ function ShareButton({ cardUrl, name, profileImageUrl, description }: {
         imageUrl: profileImageUrl || 'https://cardlab.digital/og-default.png',
         link: { mobileWebUrl: cardUrl, webUrl: cardUrl },
       },
+      social: {
+        likeCount: undefined,
+        commentCount: undefined,
+        sharedCount: undefined,
+      },
       buttons: [
         { title: '모바일 명함 보기', link: { mobileWebUrl: cardUrl, webUrl: cardUrl } },
+        { title: '채널 추가하기', link: { mobileWebUrl: 'https://pf.kakao.com/' + CARDLAB_CHANNEL_ID, webUrl: 'https://pf.kakao.com/' + CARDLAB_CHANNEL_ID } },
       ],
     })
     setOpen(false)
