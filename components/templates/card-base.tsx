@@ -121,29 +121,32 @@ function ShareButton({ cardUrl, name, profileImageUrl, description }: {
     setOpen(false)
   }
 
-  async function handleShare() {
+  async function handleNativeShare() {
     if (navigator.share) {
       try { await navigator.share({ title: name + '의 디지털 명함', url: cardUrl }) } catch {}
     } else {
-      setOpen(v => !v)
+      await copyToClipboard(cardUrl); setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
     }
+    setOpen(false)
   }
 
   return (
     <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}>
       {open && (
+        <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />
         <div style={{ position: 'absolute', top: 48, right: 0, background: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '8px', minWidth: 170, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
           {kakaoReady && (
-            <button onClick={handleKakaoShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
+            <button onClick={handleKakaoShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: '#FEE500', color: '#3C1E1E', fontWeight: 700, fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
               <span style={{ fontSize: 18 }}>💬</span> 카카오톡 공유
             </button>
           )}
-          <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
+          <button onClick={handleNativeShare} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', borderRadius: 8 }}>
             <span style={{ fontSize: 18 }}>{copied ? '✅' : '🔗'}</span> {copied ? '복사됨!' : '링크 복사'}
           </button>
         </div>
       )}
-      <button className="share-btn" onClick={handleShare} aria-label="공유">
+      <button className="share-btn" onClick={() => setOpen(v => !v)} aria-label="공유">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
           <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
