@@ -216,7 +216,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
     (['afg-dark', 'afg-light'].includes(f.template_key) ? '/afg-background.png' : null)
   const logoUrl = f.company_logo_url || selectedCompany?.logo_url || null
 
-  // 실제 명함과 동일한 값
   const btnR = { none: '0', sm: '6px', md: '12px', lg: '16px', full: '9999px' }[design.btn_radius || 'lg']
   const btnH = { sm: '40px', md: '46px', lg: '52px' }[design.btn_size || 'md']
 
@@ -232,9 +231,13 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
   const profileScale = profileZoom / 100
   const objectPos = `${profileX}% ${profileY}%`
 
-  // 실제 명함과 동일한 공통 함수
   const logoImgStyle    = getLogoStyle(isLightBg, logoH)
   const footerLogoStyle = getFooterLogoStyle(isLightBg, logoH)
+
+  // card-base.tsx와 동일한 hasBackground 로직
+  const hasBackground = !!bgImageUrl
+  const profileLeft   = hasBackground ? '30%' : '0'
+  const profileWidth  = hasBackground ? '70%' : '100%'
 
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
 
@@ -267,23 +270,66 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
 
       <div style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh', overflowY: 'auto' }}>
 
-        {/* 히어로 — 실제 명함과 동일한 비율 (68vw/360px/180px) */}
         <div style={{ position: 'relative', width: '100%', overflow: 'hidden', height: '68vw', maxHeight: 360, minHeight: 180, background: pageBg }}>
+
+          {/* zIndex 1: 배경 이미지 */}
           {bgImageUrl && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
           )}
+
+          {/* zIndex 2: 브랜드 로고 (배경 있을 때만, 좌하단) */}
+          {hasBackground && logoUrl && (
+            <div style={{ position: 'absolute', bottom: 14, left: 14, zIndex: 2, pointerEvents: 'none' }}>
+              <img
+                src={logoUrl}
+                alt=""
+                style={{
+                  height: logoH,
+                  width: 'auto',
+                  maxWidth: 120,
+                  objectFit: 'contain',
+                  opacity: 0.9,
+                  mixBlendMode: isLightBg ? 'normal' : 'screen',
+                }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            </div>
+          )}
+
+          {/* zIndex 5: 프로필 — 배경 있으면 우측 70%, 없으면 전체 */}
           {f.profile_image_url ? (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 5, overflow: 'hidden' }}>
+            <div style={{
+              position: 'absolute',
+              top: 0, bottom: 0,
+              left: profileLeft,
+              width: profileWidth,
+              zIndex: 5,
+              overflow: 'hidden',
+            }}>
               <img src={f.profile_image_url} alt=""
                 style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? `scale(${profileScale})` : undefined, transformOrigin: `${profileX}% ${profileY}%` }}
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              {/* 좌측 페이드 — 배경과 자연스럽게 겹치게 */}
+              {hasBackground && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0, bottom: 0, left: 0,
+                  width: '40%',
+                  background: `linear-gradient(to right, ${pageBg}cc, transparent)`,
+                  pointerEvents: 'none',
+                }} />
+              )}
             </div>
           ) : (
             <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ width: 88, height: 88, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
             </div>
           )}
+
+          {/* zIndex 10: 그라디언트 */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ${pageBg}55 72%, ${pageBg} 100%)` }} />
+
+          {/* zIndex 20: 팀 뱃지 */}
           {f.team_name && (
             <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fzTeam, fontWeight: 600, border: `1px solid ${border}` }}>
               {f.team_name}
@@ -291,10 +337,8 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
           )}
         </div>
 
-        {/* 본문 — 실제 명함과 동일한 padding/marginTop */}
         <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
 
-          {/* 이름 위 로고 — getLogoStyle 공통 함수 사용 (mixBlendMode 동일) */}
           <div style={{ marginBottom: 16 }}>
             {logoUrl && (
               <img src={logoUrl} alt="" style={logoImgStyle}
@@ -311,7 +355,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
-          {/* 메뉴 — 실제 명함과 동일 */}
           <div style={{ marginBottom: 16 }}>
             {lb.menu_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 9 }}>{lb.menu_section}</p>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
@@ -332,7 +375,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           </div>
 
-          {/* CTA 버튼 — 실제 명함과 동일 */}
           {f.phone && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: btnColor, color: '#fff', borderRadius: btnR, fontSize: fzBody, fontWeight: 700 }}>{lb.call_btn || '전화 문의하기'}</div>
@@ -340,7 +382,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
-          {/* 추가 링크 — 실제 명함과 동일 */}
           {extraLinks.filter(l => l.url).map(link => (
             <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, marginBottom: 6, color: textSub, fontSize: fzBody }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -356,7 +397,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           ))}
 
-          {/* 카드뉴스 — 실제 명함과 동일 */}
           {newsItems.filter((n: any) => n.title?.trim()).length > 0 && (
             <div style={{ marginBottom: 20 }}>
               {lb.news_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 11 }}>{lb.news_section}</p>}
@@ -374,7 +414,6 @@ function LivePreview({ f, extraLinks, design, companies, newsItems }: {
             </div>
           )}
 
-          {/* 하단 푸터 — 실제 명함과 동일한 getFooterLogoStyle 사용 */}
           <div style={{ padding: '14px 16px', background: footerBg, border: `1px solid ${border}`, borderRadius: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               {logoUrl
@@ -1053,7 +1092,6 @@ export function CardForm({ mode, card, companies = [] }: Props) {
         </button>
       </div>
 
-      {/* 오른쪽 미리보기 — 460px, sticky */}
       <div style={{ position: 'sticky', top: 20, alignSelf: 'start' }}>
         <LivePreview f={f} extraLinks={extraLinks} design={design} companies={companies} newsItems={newsItems} />
       </div>
