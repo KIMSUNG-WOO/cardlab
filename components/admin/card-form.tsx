@@ -460,10 +460,10 @@ export function CardForm({ mode, card, companies = [] }: Props) {
       btn_radius:         raw.btn_radius ?? 'lg',
       btn_size:           raw.btn_size   ?? 'md',
       profile_position_y: typeof raw.profile_position_y === 'number' ? raw.profile_position_y : 15,
-      custom_colors: raw.custom_colors ? {
-      profile_position_x: typeof raw.profile_position_x === 'number' ? raw.profile_position_x : 50,
-      profile_zoom:       typeof raw.profile_zoom       === 'number' ? raw.profile_zoom       : 100,
-        page_bg:    raw.custom_colors.page_bg    ?? '#0a0a0a',
+          profile_position_x: typeof raw.profile_position_x === 'number' ? raw.profile_position_x : 50,
+          profile_zoom:       typeof raw.profile_zoom       === 'number' ? raw.profile_zoom       : 100,
+          custom_colors: raw.custom_colors ? {
+              page_bg:    raw.custom_colors.page_bg    ?? '#0a0a0a',
         card_bg:    raw.custom_colors.card_bg    ?? '#1a1a2e',
         btn_color:  raw.custom_colors.btn_color  ?? '#1e40af',
         name_color: raw.custom_colors.name_color ?? '#ffffff',
