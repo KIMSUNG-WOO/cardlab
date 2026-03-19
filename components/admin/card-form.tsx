@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import type { JSX } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { TEMPLATE_LIST, DEFAULT_TEMPLATE, TEMPLATES, TEMPLATE_GROUPS } from '@/lib/templates'
