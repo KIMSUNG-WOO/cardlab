@@ -17,7 +17,15 @@ export type LinkType =
 
 export type LabelPrefixType = 'none' | 'emoji' | 'text' | 'image'
 
-export type DesignStyle = 'card' | 'minimal' | 'premium' | 'text-focus' | 'visual-focus'
+export type DesignStyle =
+  | 'card'
+  | 'minimal'
+  | 'premium'
+  | 'text-focus'
+  | 'visual-focus'
+  | 'ceo'
+  | 'consultant'
+  | 'finance-expert'
 export type FontStyle = 'default' | 'serif' | 'bold' | 'light'
 export type BgStyle = 'solid' | 'gradient' | 'blur' | 'image-blend'
 export type InfoLayout = 'standard' | 'compact' | 'expanded'

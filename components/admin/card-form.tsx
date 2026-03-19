@@ -1,10 +1,17 @@
 'use client'
 
-import { parseDesign, getLogoStyle, getFooterLogoStyle, isLightBackground } from '@/components/templates/card-base'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { TEMPLATE_LIST, DEFAULT_TEMPLATE, TEMPLATES, TEMPLATE_GROUPS } from '@/lib/templates'
+import { AfgDarkCard } from '@/components/templates/afg-dark-card'
+import { AfgLightCard } from '@/components/templates/afg-light-card'
+import { ModernGrayCard } from '@/components/templates/modern-gray-card'
+import { NavyProCard } from '@/components/templates/navy-pro-card'
+import { CleanWhiteCard } from '@/components/templates/clean-white-card'
+import { PremiumBlackCard } from '@/components/templates/premium-black-card'
+import { SlateProCard } from '@/components/templates/slate-pro-card'
+import { WarmWhiteCard } from '@/components/templates/warm-white-card'
 import { isValidSlug, nullToEmpty, generateId } from '@/lib/utils'
 import type {
   BusinessCard, TemplateKey, LinkItem, LinkType,
@@ -68,6 +75,9 @@ const DESIGN_STYLE_OPTIONS: { value: DesignStyle; label: string; desc: string; i
   { value: 'premium',      label: '프리미엄형',   desc: '고급스러운 연출',      icon: '✨' },
   { value: 'text-focus',   label: '텍스트 중심',  desc: '정보/텍스트 강조',     icon: '📝' },
   { value: 'visual-focus', label: '비주얼 중심',  desc: '사진/이미지 강조',     icon: '🖼️' },
+  { value: 'ceo',          label: 'CEO형',        desc: '대표/임원 전용',        icon: '' },
+  { value: 'consultant',  label: '컨설턴트형',    desc: '전문 컨설팅 중심',     icon: '' },
+  { value: 'finance-expert', label: '금융전문가형', desc: '금융 전문가 전용',    icon: '' },
 ]
 
 const FONT_STYLE_OPTIONS: { value: FontStyle; label: string; desc: string }[] = [
@@ -229,79 +239,74 @@ function getPreviewAnimClass(type: AnimationType, on: boolean): string {
   return map[type] ?? 'anim-zoom-out'
 }
 
-function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
-  f: any; extraLinks: LinkItem[]; design: CardDesignOptions
-  companies: Company[]; newsItems: any[]; animKey: number
+function LivePreview({ f, extraLinks, design, newsItems, animKey }: {
+  f: any
+  extraLinks: LinkItem[]
+  design: CardDesignOptions
+  newsItems: any[]
+  animKey: number
 }) {
-  const tpl = TEMPLATE_LIST.find(t => t.key === f.template_key)
-  const isLight = ['afg-light', 'clean-white', 'warm-white', 'minimal-type', 'text-focus'].includes(f.template_key)
-
-  const cc = design.custom_colors as any
-  const pageBg    = cc?.page_bg    || tpl?.preview   || '#0a0a0a'
-  const cardBg    = cc?.card_bg    || (isLight ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.07)')
-  const textName  = cc?.name_color || (isLight ? '#1a1a1a' : '#ffffff')
-  const textSub   = cc?.desc_color || (isLight ? '#555555' : '#94a3b8')
-  const textMuted = isLight ? '#888' : '#64748b'
-  const btnColor  = cc?.btn_color  || tpl?.previewGradient || (isLight ? '#1e40af' : '#1e3a5f')
-  const accent    = cc?.accent     || (isLight ? '#1e40af' : '#3b82f6')
-  const border    = isLight ? '#e9ecef' : 'rgba(255,255,255,0.1)'
-  const footerBg  = isLight ? '#f8f9fa' : 'rgba(255,255,255,0.04)'
-  const menuActiveBg = isLight ? `${accent}14` : 'rgba(255,255,255,0.1)'
-  const teamBadgeBg  = cc?.team_badge_bg   ?? (cardBg + 'dd')
-  const teamBadgeText = cc?.team_badge_text ?? textSub
-  const isLightBg = isLightBackground(pageBg)
-
-  const selectedCompany = companies.find(c => c.id === f.company_id)
-  const bgImageUrl = f.company_background_url || selectedCompany?.background_url ||
-    (['afg-dark', 'afg-light'].includes(f.template_key) ? '/afg-background.png' : null)
-  const logoUrl = f.company_logo_url || selectedCompany?.logo_url || null
-
-  const btnR = { none: '0', sm: '6px', md: '12px', lg: '16px', full: '9999px' }[design.btn_radius || 'lg']
-  const btnH = { sm: '40px', md: '46px', lg: '52px' }[design.btn_size || 'md']
-
-  const fzName  = design.font_size_name  ?? 28
-  const fzSub   = design.font_size_sub   ?? 14
-  const fzBody  = design.font_size_body  ?? 13
-  const fzTeam  = design.font_size_team  ?? 11
-  const iconSz  = design.icon_size       ?? 22
-  const logoH   = design.logo_height     ?? 26
-  const profileY = design.profile_position_y ?? 15
-  const profileX = (design as any).profile_position_x ?? 50
-  const profileZoom = (design as any).profile_zoom ?? 100
-  const profileScale = profileZoom / 100
-  const objectPos = `${profileX}% ${profileY}%`
-
-  const logoImgStyle    = getLogoStyle(isLightBg, logoH)
-  const footerLogoStyle = getFooterLogoStyle(isLightBg, logoH)
-
-  const hasBackground = !!bgImageUrl
-  const profileLeft   = hasBackground ? '30%' : '0'
-  const profileWidth  = hasBackground ? '70%' : '100%'
-
-  const animClass  = getPreviewAnimClass(design.animation_type, design.animation_on)
-  const speedClass = 'anim-speed-' + design.animation_speed
-  const animDelay  = design.animation_delay ? design.animation_delay + 's' : undefined
-
   const lb: AllLabels = { ...DEFAULT_LABELS, ...(design.labels ?? {}) }
 
-  function PreviewLabel({ cfgKey }: { cfgKey: string }) {
-    const cfgMap: Record<string, string> = {
-      phone: 'phone_cfg', email: 'email_cfg', address: 'address_cfg',
-      website: 'website_cfg', extension: 'extension_cfg', fax: 'fax_cfg',
-    }
-    const cfg = (lb as any)[cfgMap[cfgKey]] as LabelConfig | undefined
-    if (cfg && cfg.mode === 'emoji' && cfg.emoji) return <span style={{ fontSize: 13, marginRight: 5 }}>{cfg.emoji}</span>
-    if (cfg && cfg.mode === 'text' && cfg.text) return <span style={{ fontSize: 11, marginRight: 5, opacity: 0.8 }}>{cfg.text}</span>
-    const simple = (lb as any)[cfgKey] as string | undefined
-    if (simple) return <span style={{ marginRight: 5 }}>{simple}</span>
-    return null
-  }
+  const previewNews: CardNews[] = newsItems
+    .filter((n: any) => n.title?.trim())
+    .map((n: any, i: number) => ({
+      id: `preview-${i}`,
+      card_id: 'preview',
+      title: n.title,
+      summary: n.summary,
+      image_url: n.image_url || null,
+      link_url: n.link_url || null,
+      category: n.category,
+      sort_order: i,
+      is_visible: n.is_visible,
+      created_at: new Date().toISOString(),
+    }))
 
-  const rowStylePreview: React.CSSProperties = {
-    fontSize: 13, color: textMuted, margin: 0, padding: '10px 0',
-    display: 'flex', alignItems: 'flex-start',
-    borderBottom: `1px solid ${border}33`,
-    lineHeight: 1.5, textDecoration: 'none',
+  const previewCard: BusinessCard = {
+    id: 'preview-id',
+    slug: f.slug || 'preview',
+    name: f.name,
+    english_name: f.english_name,
+    position: f.position,
+    company_name: f.company_name,
+    company_id: f.company_id || null,
+    company_logo_url: f.company_logo_url || null,
+    company_background_url: f.company_background_url || null,
+    team_name: f.team_name || null,
+    short_intro: f.short_intro || null,
+    phone: f.phone || null,
+    email: f.email || null,
+    address: f.address || null,
+    website_url: f.website_url || null,
+    inquiry_url: f.inquiry_url || null,
+    profile_image_url: f.profile_image_url || null,
+    menu_insurance_claim_url: f.menu_insurance_claim_url || null,
+    menu_check_insurance_url: f.menu_check_insurance_url || null,
+    menu_analysis_url: f.menu_analysis_url || null,
+    menu_consult_url: f.menu_consult_url || null,
+    extra_links: extraLinks,
+    design_options: {
+      ...design,
+      labels: lb,
+    },
+    template_key: f.template_key,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    card_news: previewNews,
+  } as BusinessCard
+
+  let CardComponent: (props: { card: BusinessCard }) => JSX.Element
+  switch (f.template_key as TemplateKey) {
+    case 'afg-light':      CardComponent = AfgLightCard; break
+    case 'modern-gray':    CardComponent = ModernGrayCard; break
+    case 'navy-pro':       CardComponent = NavyProCard; break
+    case 'clean-white':    CardComponent = CleanWhiteCard; break
+    case 'premium-black':  CardComponent = PremiumBlackCard; break
+    case 'slate-pro':      CardComponent = SlateProCard; break
+    case 'warm-white':     CardComponent = WarmWhiteCard; break
+    default:               CardComponent = AfgDarkCard; break
   }
 
   return (
@@ -310,161 +315,9 @@ function LivePreview({ f, extraLinks, design, companies, newsItems, animKey }: {
         <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', letterSpacing: '0.1em', margin: 0 }}>LIVE PREVIEW</p>
         <p style={{ fontSize: 10, color: '#9ca3af', margin: 0 }}>실제 명함과 동일</p>
       </div>
-
-      <div
-        key={animKey}
-        className={`${animClass} ${speedClass}`}
-        style={{ width: '100%', background: pageBg, borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh', overflowY: 'auto', animationDelay: animDelay }}
-      >
-        <div className="hero-anim" style={{ position: 'relative', width: '100%', overflow: 'hidden', height: '68vw', maxHeight: 360, minHeight: 180, background: pageBg }}>
-          {bgImageUrl && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }} />
-          )}
-          {hasBackground && logoUrl && (
-            <div style={{ position: 'absolute', bottom: 14, left: 14, zIndex: 2, pointerEvents: 'none' }}>
-              <img src={logoUrl} alt="" style={{ height: logoH, width: 'auto', maxWidth: 120, objectFit: 'contain', opacity: 0.9, mixBlendMode: isLightBg ? 'normal' : 'screen' }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            </div>
-          )}
-          {f.profile_image_url ? (
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: profileLeft, width: profileWidth, zIndex: 5, overflow: 'hidden' }}>
-              <img src={f.profile_image_url} alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: objectPos, transform: profileScale !== 1 ? `scale(${profileScale})` : undefined, transformOrigin: `${profileX}% ${profileY}%` }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              {hasBackground && (
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '40%', background: `linear-gradient(to right, ${pageBg}cc, transparent)`, pointerEvents: 'none' }} />
-              )}
-            </div>
-          ) : (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: 88, height: 88, borderRadius: '50%', background: cardBg, border: `2px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>👤</div>
-            </div>
-          )}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: `linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 15%, transparent 48%, ${pageBg}55 72%, ${pageBg} 100%)` }} />
-          {f.team_name && (
-            <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 20, padding: '3px 10px', borderRadius: 20, background: teamBadgeBg, backdropFilter: 'blur(12px)', color: teamBadgeText, fontSize: fzTeam, fontWeight: 600, border: `1px solid ${border}` }}>
-              {f.team_name}
-            </div>
-          )}
-        </div>
-
-        <div style={{ padding: '0 18px 80px', marginTop: -4 }}>
-          <div className="fade-up-1" style={{ marginBottom: 16 }}>
-            {logoUrl && (
-              <img src={logoUrl} alt="" style={logoImgStyle}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            )}
-            {f.name && <h1 style={{ fontSize: fzName, fontWeight: 700, color: textName, margin: '0 0 3px', letterSpacing: '-0.025em', lineHeight: 1.2 }}>{f.name}</h1>}
-            {f.english_name && <p style={{ fontSize: Math.max(fzSub - 1, 10), color: accent, margin: '0 0 4px', fontWeight: 500 }}>{f.english_name}</p>}
-            {f.position && <p style={{ fontSize: fzSub, color: textSub, lineHeight: 1.5, margin: 0 }}>{f.position}{f.company_name && <span style={{ color: textMuted }}> · {f.company_name}</span>}</p>}
-          </div>
-          {f.short_intro && (
-            <div className="fade-up-2" style={{ marginBottom: 18, paddingLeft: 12, borderLeft: `2px solid ${accent}44` }}>
-              <p style={{ fontSize: fzBody + 1, color: textSub, lineHeight: 1.8, margin: 0 }}>{f.short_intro}</p>
-            </div>
-          )}
-          <div className="fade-up-3" style={{ marginBottom: 16 }}>
-            {lb.menu_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 9 }}>{lb.menu_section}</p>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
-              {[
-                { key: 'insurance_claim', label: lb.menu_insurance || '보험금청구', icon: '📋', url: f.menu_insurance_claim_url },
-                { key: 'check_insurance', label: lb.menu_check     || '내보험조회', icon: '🔍', url: f.menu_check_insurance_url },
-                { key: 'analysis',        label: lb.menu_analysis  || '보장분석',   icon: '📊', url: f.menu_analysis_url },
-                { key: 'consult',         label: lb.menu_consult   || '상담신청',   icon: '💬', url: f.menu_consult_url },
-              ].map(item => {
-                const active = !!item.url
-                return (
-                  <div key={item.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 3px', borderRadius: 10, background: active ? menuActiveBg : (isLight ? '#f8f9fa' : 'rgba(255,255,255,0.05)'), border: `1px solid ${active ? accent + '40' : border}`, opacity: active ? 1 : 0.4 }}>
-                    {design.show_icon && <span style={{ fontSize: iconSz }}>{item.icon}</span>}
-                    {design.show_text && <span style={{ fontSize: 10, color: isLight ? '#495057' : '#94a3b8', textAlign: 'center', fontWeight: 500, lineHeight: 1.3 }}>{item.label}</span>}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-          {f.phone && (
-            <div className="fade-up-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: btnColor, color: '#fff', borderRadius: btnR, fontSize: fzBody, fontWeight: 700 }}>{lb.call_btn || '전화 문의하기'}</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: btnH, background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, fontSize: fzBody, color: textSub, fontWeight: 600 }}>{lb.sms_btn || 'SMS 문의'}</div>
-            </div>
-          )}
-          {extraLinks.filter(l => l.url).length > 0 && (
-            <div className="fade-up-5" style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
-              {extraLinks.filter(l => l.url).map(link => (
-                <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: btnH, padding: '0 15px', background: cardBg, border: `1px solid ${border}`, borderRadius: btnR, color: textSub, fontSize: fzBody }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {link.prefixType === 'emoji' && link.prefixEmoji && <span style={{ fontSize: iconSz }}>{link.prefixEmoji}</span>}
-                    {link.prefixType === 'image' && link.prefixImage && <img src={link.prefixImage} alt="" style={{ height: iconSz, width: 'auto', objectFit: 'contain' }} />}
-                    {link.prefixType === 'text' && link.prefixText && <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.7, whiteSpace: 'nowrap' }}>{link.prefixText}</span>}
-                    <span style={{ fontWeight: 500 }}>{link.label}</span>
-                    {(link.type === 'fax' || link.type === 'extension') && link.url && (
-                      <span style={{ fontSize: fzBody - 1, color: textMuted }}>{link.url}</span>
-                    )}
-                  </span>
-                  <span style={{ color: textMuted, fontSize: 16, flexShrink: 0 }}>›</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {newsItems.filter((n: any) => n.title?.trim()).length > 0 && (
-            <div className="fade-up-6" style={{ marginBottom: 20 }}>
-              {lb.news_section && <p style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#94a3b8' : '#475569', letterSpacing: '0.18em', marginBottom: 11 }}>{lb.news_section}</p>}
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
-                {newsItems.filter((n: any) => n.title?.trim()).slice(0, 3).map((news: any, i: number) => (
-                  <div key={i} style={{ flexShrink: 0, width: 185, background: cardBg, border: `1px solid ${border}`, borderRadius: 13, overflow: 'hidden' }}>
-                    {news.image_url && <div style={{ width: '100%', height: 98, overflow: 'hidden' }}><img src={news.image_url} alt={news.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>}
-                    <div style={{ padding: 10 }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: textName, margin: '0 0 3px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.title}</p>
-                      <p style={{ fontSize: 10, color: textMuted, lineHeight: 1.4, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.summary}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div style={{ padding: '14px 16px', background: footerBg, border: `1px solid ${border}`, borderRadius: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              {logoUrl
-                ? <img src={logoUrl} alt="" style={footerLogoStyle} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                : <div style={{ width: 28, height: 28, borderRadius: 6, background: cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${border}`, fontSize: 13 }}>🏢</div>
-              }
-              {f.company_name && <p style={{ fontSize: fzBody + 1, fontWeight: 700, color: textName, margin: 0 }}>{f.company_name}</p>}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {f.address && (
-                <div style={rowStylePreview}>
-                  <PreviewLabel cfgKey="address" />
-                  <span style={{ flex: 1 }}>{f.address}</span>
-                  <span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>지도 ›</span>
-                </div>
-              )}
-              {f.website_url && (
-                <div style={rowStylePreview}>
-                  <PreviewLabel cfgKey="website" />
-                  <span style={{ flex: 1 }}>{f.website_url.replace(/^https?:\/\//, '')}</span>
-                  <span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>열기 ›</span>
-                </div>
-              )}
-              {f.phone && (
-                <div style={rowStylePreview}>
-                  <PreviewLabel cfgKey="phone" />
-                  <span style={{ flex: 1 }}>{f.phone}</span>
-                  <span style={{ fontSize: 10, opacity: 0.45, marginLeft: 2 }}>탭하여 복사</span>
-                </div>
-              )}
-              {f.email && (
-                <div style={{ ...rowStylePreview, borderBottom: 'none' }}>
-                  <PreviewLabel cfgKey="email" />
-                  <span style={{ flex: 1 }}>{f.email}</span>
-                  <span style={{ fontSize: 11, color: accent, marginLeft: 6, flexShrink: 0, fontWeight: 600 }}>메일 ›</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div style={{ height: 24 }} />
-        </div>
+      <div key={animKey} style={{ width: '100%', borderRadius: 16, overflow: 'hidden', border: '1px solid #e9ecef', boxShadow: '0 4px 24px rgba(0,0,0,0.12)', maxHeight: '92vh' }}>
+        <CardComponent card={previewCard} />
       </div>
-
       <div style={{ marginTop: 8, padding: '7px 11px', background: '#f8f9fa', borderRadius: 9, display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 10, color: '#9ca3af' }}>
         <span>이름 {design.font_size_name}px</span>
         <span>팀 {design.font_size_team}px</span>
@@ -484,8 +337,8 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   const [error,  setError]        = useState('')
   const [activeTab, setActiveTab] = useState<'basic' | 'links' | 'design' | 'anim' | 'labels' | 'news'>('basic')
   const [showLinkPicker, setShowLinkPicker] = useState(false)
-  const [animKey, setAnimKey] = useState(0)
   const [tplGroupIdx, setTplGroupIdx] = useState(0)
+  const [animKey, setAnimKey] = useState(0)
 
   const [f, setF] = useState({
     slug:                     card?.slug ?? '',
@@ -703,7 +556,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
   })
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 460px', gap: 28, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 520px', gap: 28, alignItems: 'start' }}>
 
       <div>
         <div style={{ display: 'flex', gap: 4, background: '#f1f3f5', padding: 4, borderRadius: 12, marginBottom: 20, overflow: 'auto' }}>
@@ -877,7 +730,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
             {/* B1. 디자인 스타일 */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 8 }}>카드 스타일</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 6 }}>
                 {DESIGN_STYLE_OPTIONS.map(opt => (
                   <button key={opt.value} type="button" onClick={() => setDes('design_style')(opt.value)}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', border: `1.5px solid ${(design as any).design_style === opt.value ? '#4263eb' : '#e9ecef'}`, background: (design as any).design_style === opt.value ? '#e7f0ff' : '#f8f9fa', borderRadius: 9, cursor: 'pointer' }}>
@@ -1220,7 +1073,7 @@ export function CardForm({ mode, card, companies = [] }: Props) {
       </div>
 
       <div style={{ position: 'sticky', top: 20, alignSelf: 'start' }}>
-        <LivePreview f={f} extraLinks={extraLinks} design={design} companies={companies} newsItems={newsItems} animKey={animKey} />
+        <LivePreview f={f} extraLinks={extraLinks} design={design} newsItems={newsItems} animKey={animKey} />
       </div>
     </div>
   )

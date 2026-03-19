@@ -304,25 +304,25 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
     ? card.short_intro.slice(0, 60)
     : card.position + ' · ' + card.company_name
 
-  const heroH         = isMobile ? (heroCollapsed ? '22vw'  : '52vw')  : (heroCollapsed ? '30vw'  : '68vw')
-  const heroMaxH      = isMobile ? (heroCollapsed ? '110px' : '260px') : (heroCollapsed ? '140px' : '360px')
-  const heroMinH      = isMobile ? (heroCollapsed ? '70px'  : '140px') : (heroCollapsed ? '90px'  : '180px')
-  const bodyPadding   = isMobile ? '0 14px 60px' : '0 18px 80px'
-  const bodyMarginTop = isMobile ? -8 : -4
-  const mb1           = isMobile ? 8  : 16
-  const mb2           = isMobile ? 8  : 18
-  const mb3           = isMobile ? 10 : 16
-  const ctaGap        = isMobile ? 5  : 7
-  const ctaMb         = isMobile ? 5  : 7
-  const linkGap       = isMobile ? 4  : 6
-  const linkMb        = isMobile ? 10 : 18
-  const btnHMobile    = isMobile ? '38px' : btnH
-  const menuPad       = isMobile ? '8px 3px' : '10px 3px'
-  const menuGap       = isMobile ? 4 : 5
+  const heroH         = isMobile ? (heroCollapsed ? '22vw'  : '46vw')  : (heroCollapsed ? '30vw'  : '68vw')
+  const heroMaxH      = isMobile ? (heroCollapsed ? '110px' : '230px') : (heroCollapsed ? '140px' : '360px')
+  const heroMinH      = isMobile ? (heroCollapsed ? '70px'  : '130px') : (heroCollapsed ? '90px'  : '180px')
+  const bodyPadding   = isMobile ? '0 14px 40px' : '0 18px 80px'
+  const bodyMarginTop = isMobile ? -14 : -4
+  const mb1           = isMobile ? 6  : 16
+  const mb2           = isMobile ? 6  : 18
+  const mb3           = isMobile ? 8  : 16
+  const ctaGap        = isMobile ? 4  : 7
+  const ctaMb         = isMobile ? 4  : 7
+  const linkGap       = isMobile ? 3  : 6
+  const linkMb        = isMobile ? 8  : 18
+  const btnHMobile    = isMobile ? '34px' : btnH
+  const menuPad       = isMobile ? '6px 3px' : '10px 3px'
+  const menuGap       = isMobile ? 3 : 5
 
   const hasBackground = !!bgImageUrl
-  const profileLeft   = hasBackground ? '30%' : '0'
-  const profileWidth  = hasBackground ? '70%' : '100%'
+  const profileLeft   = hasBackground ? (isMobile ? '40%' : '30%') : '0'
+  const profileWidth  = hasBackground ? (isMobile ? '60%' : '70%') : '100%'
 
   function FooterLabel({ cfgKey }: { cfgKey: string }) {
     const cfgMap: Record<string, string> = {
@@ -413,7 +413,7 @@ export function CardBase({ card, theme }: { card: BusinessCard; theme: CardTheme
               <div style={{
                 position: 'absolute',
                 top: 0, bottom: 0, left: 0,
-                width: '40%',
+                width: isMobile ? '32%' : '40%',
                 background: 'linear-gradient(to right, ' + t.heroBg + 'cc, transparent)',
                 pointerEvents: 'none',
               }} />
